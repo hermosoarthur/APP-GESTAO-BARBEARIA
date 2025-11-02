@@ -1,166 +1,388 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const mockVendas = [
   {
     id: '1',
-    data: '2024-01-15',
     cliente: 'João Silva',
-    servicos: ['Corte Social'],
+    servico: 'Corte Social',
     valor: 35,
-    formaPagamento: 'Dinheiro',
-    responsavel: 'Carlos'
+    data: '2024-01-15',
+    barbeiro: 'Carlos',
+    formaPagamento: 'Dinheiro'
   },
   {
     id: '2',
-    data: '2024-01-15',
     cliente: 'Maria Santos',
-    servicos: ['Barba'],
+    servico: 'Barba',
     valor: 25,
-    formaPagamento: 'Cartão',
-    responsavel: 'Pedro'
+    data: '2024-01-15',
+    barbeiro: 'Pedro',
+    formaPagamento: 'Cartão'
+  },
+  {
+    id: '3',
+    cliente: 'José Oliveira',
+    servico: 'Corte + Barba',
+    valor: 55,
+    data: '2024-01-14',
+    barbeiro: 'Ana',
+    formaPagamento: 'PIX'
   }
 ];
 
 const formasPagamento = ['Dinheiro', 'Cartão Débito', 'Cartão Crédito', 'PIX'];
 
-export default function VendasScreen() {
+export default function VendasScreen({ theme, styles }) {
   const [vendas, setVendas] = React.useState(mockVendas);
   const [modalVisible, setModalVisible] = React.useState(false);
-  const [novaVenda, setNovaVenda] = React.useState({
+  const [filtroData, setFiltroData] = React.useState('');
+
+  const [formData, setFormData] = React.useState({
     cliente: '',
-    servicos: [],
+    servico: '',
     valor: '',
-    formaPagamento: 'Dinheiro',
-    responsavel: ''
+    barbeiro: '',
+    formaPagamento: 'Dinheiro'
   });
 
-  const handleAddVenda = () => {
-    if (!novaVenda.cliente || !novaVenda.valor || !novaVenda.responsavel) {
+  const screenStyles = createScreenStyles(theme);
+
+  const vendasFiltradas = filtroData 
+    ? vendas.filter(v => v.data === filtroData)
+    : vendas;
+
+  const totalHoje = vendas
+    .filter(v => v.data === new Date().toISOString().split('T')[0])
+    .reduce((sum, v) => sum + v.valor, 0);
+
+  const totalSemana = vendas
+    .filter(v => {
+      const dataVenda = new Date(v.data);
+      const umaSemanaAtras = new Date();
+      umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
+      return dataVenda >= umaSemanaAtras;
+    })
+    .reduce((sum, v) => sum + v.valor, 0);
+
+  const handleSave = () => {
+    if (!formData.cliente || !formData.servico || !formData.valor || !formData.barbeiro) {
       Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
       return;
     }
 
-    const venda = {
-      ...novaVenda,
+    const novaVenda = {
+      ...formData,
       id: Date.now().toString(),
       data: new Date().toISOString().split('T')[0],
-      valor: parseFloat(novaVenda.valor)
+      valor: parseFloat(formData.valor)
     };
 
-    setVendas([venda, ...vendas]);
+    setVendas([novaVenda, ...vendas]);
     setModalVisible(false);
-    setNovaVenda({
+    resetForm();
+    
+    Alert.alert('Sucesso', 'Venda registrada com sucesso!');
+  };
+
+  const handleDelete = (id) => {
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Deseja realmente excluir esta venda?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Excluir', 
+          style: 'destructive',
+          onPress: () => setVendas(vendas.filter(v => v.id !== id))
+        }
+      ]
+    );
+  };
+
+  const resetForm = () => {
+    setFormData({
       cliente: '',
-      servicos: [],
+      servico: '',
       valor: '',
-      formaPagamento: 'Dinheiro',
-      responsavel: ''
+      barbeiro: '',
+      formaPagamento: 'Dinheiro'
     });
   };
 
-  const renderVenda = ({ item }) => React.createElement(View, {
-    key: item.id,
-    style: styles.vendaCard
-  }, [
-    React.createElement(View, { key: "header", style: styles.vendaHeader }, [
-      React.createElement(Text, { key: "cliente", style: styles.clienteNome }, item.cliente),
-      React.createElement(Text, { key: "valor", style: styles.valor }, `R$ ${item.valor.toFixed(2)}`)
-    ]),
-    React.createElement(Text, { key: "data", style: styles.vendaInfo }, `📅 ${item.data}`),
-    React.createElement(Text, { key: "pagamento", style: styles.vendaInfo }, `💳 ${item.formaPagamento}`),
-    React.createElement(Text, { key: "responsavel", style: styles.vendaInfo }, `👤 ${item.responsavel}`),
-    React.createElement(Text, { key: "servicos", style: styles.servicos }, item.servicos.join(', '))
-  ]);
+  const getFormaPagamentoIcon = (forma) => {
+    const icons = {
+      'Dinheiro': 'cash',
+      'Cartão Débito': 'card',
+      'Cartão Crédito': 'card',
+      'PIX': 'phone-portrait'
+    };
+    return icons[forma] || 'card';
+  };
 
-  return React.createElement(View, { style: styles.container }, [
+  const renderVenda = ({ item }) => {
+    return React.createElement(View, {
+      key: item.id,
+      style: screenStyles.card
+    }, [
+      React.createElement(View, {
+        key: 'header',
+        style: screenStyles.cardHeader
+      }, [
+        React.createElement(Text, {
+          key: 'cliente',
+          style: screenStyles.clienteNome
+        }, item.cliente),
+        React.createElement(Text, {
+          key: 'valor',
+          style: screenStyles.valor
+        }, `R$ ${item.valor}`)
+      ]),
+
+      React.createElement(Text, {
+        key: 'servico',
+        style: screenStyles.cardInfo
+      }, `✂️ ${item.servico} • ${item.barbeiro}`),
+
+      React.createElement(View, {
+        key: 'footer',
+        style: screenStyles.cardFooter
+      }, [
+        React.createElement(View, {
+          key: 'pagamento',
+          style: screenStyles.pagamentoContainer
+        }, [
+          React.createElement(Ionicons, {
+            key: 'icon',
+            name: getFormaPagamentoIcon(item.formaPagamento),
+            size: 14,
+            color: theme.colors.textSecondary
+          }),
+          React.createElement(Text, {
+            key: 'text',
+            style: screenStyles.pagamentoText
+          }, item.formaPagamento)
+        ]),
+        React.createElement(Text, {
+          key: 'data',
+          style: screenStyles.dataText
+        }, item.data)
+      ]),
+
+      React.createElement(View, {
+        key: 'actions',
+        style: screenStyles.actions
+      }, [
+        React.createElement(TouchableOpacity, {
+          key: 'delete',
+          style: [screenStyles.actionButton, { backgroundColor: theme.colors.danger }],
+          onPress: () => handleDelete(item.id)
+        },
+          React.createElement(Ionicons, {
+            name: 'trash',
+            size: 16,
+            color: 'white'
+          })
+        )
+      ])
+    ]);
+  };
+
+  return React.createElement(View, { style: styles.content }, [
+    // Header
     React.createElement(View, {
-      key: "header",
-      style: styles.header
+      key: 'header',
+      style: screenStyles.header
     }, [
       React.createElement(Text, {
-        key: "title",
-        style: styles.title
-      }, 'Registro de Vendas'),
+        key: 'title',
+        style: screenStyles.title
+      }, 'Vendas'),
+
       React.createElement(TouchableOpacity, {
-        key: "addButton",
-        style: styles.addButton,
+        key: 'addButton',
+        style: screenStyles.addButton,
         onPress: () => setModalVisible(true)
       },
-        React.createElement(Ionicons, { name: 'add', size: 24, color: 'white' })
+        React.createElement(Ionicons, {
+          name: 'add',
+          size: 24,
+          color: 'white'
+        })
       )
     ]),
 
+    // Resumo
     React.createElement(View, {
-      key: "resumo",
-      style: styles.resumo
+      key: 'resumo',
+      style: screenStyles.resumoContainer
     }, [
-      React.createElement(View, { key: "total", style: styles.resumoItem },
-        React.createElement(Text, { style: styles.resumoValor }, 
-          `R$ ${vendas.reduce((sum, v) => sum + v.valor, 0).toFixed(2)}`
-        ),
-        React.createElement(Text, { style: styles.resumoLabel }, 'Total Hoje')
-      ),
-      React.createElement(View, { key: "qtd", style: styles.resumoItem },
-        React.createElement(Text, { style: styles.resumoValor }, vendas.length.toString()),
-        React.createElement(Text, { style: styles.resumoLabel }, 'Vendas')
-      )
+      React.createElement(View, {
+        key: 'resumoHoje',
+        style: screenStyles.resumoCard
+      }, [
+        React.createElement(Text, {
+          key: 'valor',
+          style: screenStyles.resumoValor
+        }, `R$ ${totalHoje}`),
+        React.createElement(Text, {
+          key: 'label',
+          style: screenStyles.resumoLabel
+        }, 'Hoje')
+      ]),
+
+      React.createElement(View, {
+        key: 'resumoSemana',
+        style: screenStyles.resumoCard
+      }, [
+        React.createElement(Text, {
+          key: 'valor',
+          style: screenStyles.resumoValor
+        }, `R$ ${totalSemana}`),
+        React.createElement(Text, {
+          key: 'label',
+          style: screenStyles.resumoLabel
+        }, 'Semana')
+      ]),
+
+      React.createElement(View, {
+        key: 'resumoTotal',
+        style: screenStyles.resumoCard
+      }, [
+        React.createElement(Text, {
+          key: 'valor',
+          style: screenStyles.resumoValor
+        }, `R$ ${vendas.reduce((sum, v) => sum + v.valor, 0)}`),
+        React.createElement(Text, {
+          key: 'label',
+          style: screenStyles.resumoLabel
+        }, 'Total')
+      ])
     ]),
 
+    // Filtro
+    React.createElement(View, {
+      key: 'filtro',
+      style: screenStyles.filtroContainer
+    }, [
+      React.createElement(TextInput, {
+        key: 'filtroData',
+        style: screenStyles.filtroInput,
+        placeholder: 'Filtrar por data (YYYY-MM-DD)',
+        placeholderTextColor: theme.colors.textSecondary,
+        value: filtroData,
+        onChangeText: setFiltroData
+      })
+    ]),
+
+    // Lista
     React.createElement(FlatList, {
-      key: "list",
-      data: vendas,
+      key: 'list',
+      data: vendasFiltradas,
       renderItem: renderVenda,
       keyExtractor: item => item.id,
-      style: styles.list
+      style: screenStyles.list,
+      contentContainerStyle: screenStyles.listContent
     }),
 
-    // Modal para nova venda
+    // Modal Nova Venda
     React.createElement(Modal, {
-      key: "modal",
+      key: 'modal',
       visible: modalVisible,
       animationType: 'slide',
       transparent: true
     },
-      React.createElement(View, { style: styles.modalContainer },
-        React.createElement(View, { style: styles.modalContent },
-          React.createElement(Text, { style: styles.modalTitle }, 'Nova Venda'),
+      React.createElement(View, { style: screenStyles.modalContainer },
+        React.createElement(View, { style: screenStyles.modalContent },
+          React.createElement(Text, { style: screenStyles.modalTitle }, 'Nova Venda'),
           
           React.createElement(TextInput, {
-            style: styles.modalInput,
-            placeholder: 'Nome do Cliente',
-            value: novaVenda.cliente,
-            onChangeText: (text) => setNovaVenda({...novaVenda, cliente: text})
+            style: screenStyles.modalInput,
+            placeholder: 'Cliente',
+            placeholderTextColor: theme.colors.textSecondary,
+            value: formData.cliente,
+            onChangeText: (text) => setFormData({...formData, cliente: text})
           }),
           
           React.createElement(TextInput, {
-            style: styles.modalInput,
-            placeholder: 'Valor (R$)',
-            value: novaVenda.valor,
-            onChangeText: (text) => setNovaVenda({...novaVenda, valor: text}),
-            keyboardType: 'decimal-pad'
+            style: screenStyles.modalInput,
+            placeholder: 'Serviço',
+            placeholderTextColor: theme.colors.textSecondary,
+            value: formData.servico,
+            onChangeText: (text) => setFormData({...formData, servico: text})
           }),
 
-          React.createElement(TextInput, {
-            style: styles.modalInput,
-            placeholder: 'Responsável',
-            value: novaVenda.responsavel,
-            onChangeText: (text) => setNovaVenda({...novaVenda, responsavel: text})
-          }),
+          React.createElement(View, { style: screenStyles.row },
+            React.createElement(TextInput, {
+              style: [screenStyles.modalInput, { flex: 1, marginRight: 10 }],
+              placeholder: 'Valor (R$)',
+              placeholderTextColor: theme.colors.textSecondary,
+              value: formData.valor,
+              onChangeText: (text) => setFormData({...formData, valor: text}),
+              keyboardType: 'decimal-pad'
+            }),
+            React.createElement(TextInput, {
+              style: [screenStyles.modalInput, { flex: 1 }],
+              placeholder: 'Barbeiro',
+              placeholderTextColor: theme.colors.textSecondary,
+              value: formData.barbeiro,
+              onChangeText: (text) => setFormData({...formData, barbeiro: text})
+            })
+          ),
 
-          React.createElement(View, { style: styles.modalButtons },
+          React.createElement(Text, {
+            key: 'labelPagamento',
+            style: screenStyles.modalLabel
+          }, 'Forma de Pagamento'),
+
+          React.createElement(ScrollView, {
+            key: 'pagamentoOptions',
+            horizontal: true,
+            style: screenStyles.pagamentoOptions,
+            showsHorizontalScrollIndicator: false
+          },
+            formasPagamento.map((forma, index) => 
+              React.createElement(TouchableOpacity, {
+                key: `pagamento-${index}`,
+                style: [
+                  screenStyles.pagamentoOption,
+                  formData.formaPagamento === forma && screenStyles.pagamentoOptionSelected
+                ],
+                onPress: () => setFormData({...formData, formaPagamento: forma})
+              }, [
+                React.createElement(Ionicons, {
+                  key: 'icon',
+                  name: getFormaPagamentoIcon(forma),
+                  size: 16,
+                  color: formData.formaPagamento === forma ? 'white' : theme.colors.primary
+                }),
+                React.createElement(Text, {
+                  key: 'text',
+                  style: [
+                    screenStyles.pagamentoOptionText,
+                    formData.formaPagamento === forma && screenStyles.pagamentoOptionTextSelected
+                  ]
+                }, forma)
+              ])
+            )
+          ),
+
+          React.createElement(View, { style: screenStyles.modalButtons },
             React.createElement(TouchableOpacity, {
-              style: [styles.modalButton, styles.cancelButton],
-              onPress: () => setModalVisible(false)
+              style: [screenStyles.modalButton, screenStyles.cancelButton],
+              onPress: () => {
+                setModalVisible(false);
+                resetForm();
+              }
             },
-              React.createElement(Text, { style: styles.cancelButtonText }, 'Cancelar')
+              React.createElement(Text, { style: screenStyles.cancelButtonText }, 'Cancelar')
             ),
             React.createElement(TouchableOpacity, {
-              style: [styles.modalButton, styles.saveButton],
-              onPress: handleAddVenda
+              style: [screenStyles.modalButton, screenStyles.saveButton],
+              onPress: handleSave
             },
-              React.createElement(Text, { style: styles.saveButtonText }, 'Registrar')
+              React.createElement(Text, { style: screenStyles.saveButtonText }, 'Registrar')
             )
           )
         )
@@ -169,75 +391,85 @@ export default function VendasScreen() {
   ]);
 }
 
-const styles = StyleSheet.create({
-  container: {
+const createScreenStyles = (theme) => StyleSheet.create({
+  content: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: theme.colors.background
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    borderBottomColor: theme.colors.border
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333'
+    color: theme.colors.text
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center'
   },
-  resumo: {
+  resumoContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 10,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+    padding: 16,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border
   },
-  resumoItem: {
+  resumoCard: {
     flex: 1,
-    alignItems: 'center'
+    alignItems: 'center',
+    padding: 12
   },
   resumoValor: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#007AFF'
+    color: theme.colors.primary,
+    marginBottom: 4
   },
   resumoLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5
+    fontSize: 12,
+    color: theme.colors.textSecondary
+  },
+  filtroContainer: {
+    padding: 16,
+    backgroundColor: theme.colors.card
+  },
+  filtroInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background
   },
   list: {
     flex: 1
   },
-  vendaCard: {
-    backgroundColor: 'white',
-    padding: 15,
-    marginVertical: 5,
-    marginHorizontal: 10,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+  listContent: {
+    padding: 16
   },
-  vendaHeader: {
+  card: {
+    backgroundColor: theme.colors.card,
+    padding: 16,
+    marginVertical: 6,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -246,23 +478,47 @@ const styles = StyleSheet.create({
   clienteNome: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333'
+    color: theme.colors.text
   },
   valor: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#34C759'
+    color: theme.colors.success
   },
-  vendaInfo: {
+  cardInfo: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4
+    color: theme.colors.textSecondary,
+    marginBottom: 8
   },
-  servicos: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontStyle: 'italic',
-    marginTop: 5
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  pagamentoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  pagamentoText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginLeft: 4
+  },
+  dataText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 12
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   modalContainer: {
     flex: 1,
@@ -271,24 +527,62 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)'
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     padding: 20,
-    borderRadius: 10,
-    width: '90%'
+    borderRadius: 12,
+    width: '90%',
+    maxWidth: 400
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: theme.colors.text,
     marginBottom: 20,
     textAlign: 'center'
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 15,
-    fontSize: 16
+    fontSize: 16,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 8
+  },
+  pagamentoOptions: {
+    flexDirection: 'row',
+    marginBottom: 20
+  },
+  pagamentoOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    marginRight: 8
+  },
+  pagamentoOptionSelected: {
+    backgroundColor: theme.colors.primary
+  },
+  pagamentoOptionText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    marginLeft: 4
+  },
+  pagamentoOptionTextSelected: {
+    color: 'white'
+  },
+  row: {
+    flexDirection: 'row'
   },
   modalButtons: {
     flexDirection: 'row',
@@ -302,13 +596,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 5
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0'
+    backgroundColor: theme.colors.border
   },
   saveButton: {
-    backgroundColor: '#007AFF'
+    backgroundColor: theme.colors.primary
   },
   cancelButtonText: {
-    color: '#666',
+    color: theme.colors.text,
     fontWeight: '600'
   },
   saveButtonText: {

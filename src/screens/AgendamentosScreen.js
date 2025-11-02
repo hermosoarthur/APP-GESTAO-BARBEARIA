@@ -1,92 +1,143 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal, TextInput, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const mockServicos = [
-  { id: '1', nome: 'Corte Social', preco: 35, duracao: 30, descricao: 'Corte tradicional masculino' },
-  { id: '2', nome: 'Barba', preco: 25, duracao: 20, descricao: 'Aparar e modelar barba' },
-  { id: '3', nome: 'Corte + Barba', preco: 55, duracao: 50, descricao: 'Pacote completo' }
+const mockAgendamentos = [
+  {
+    id: '1',
+    cliente: 'João Silva',
+    telefone: '11999999999',
+    servico: 'Corte Social',
+    barbeiro: 'Carlos',
+    data: '2024-01-15',
+    hora: '09:00',
+    status: 'agendado'
+  },
+  {
+    id: '2',
+    cliente: 'Maria Santos',
+    telefone: '11888888888',
+    servico: 'Barba',
+    barbeiro: 'Pedro',
+    data: '2024-01-15',
+    hora: '10:00',
+    status: 'confirmado'
+  },
+  {
+    id: '3',
+    cliente: 'José Oliveira',
+    telefone: '11777777777',
+    servico: 'Corte + Barba',
+    barbeiro: 'Ana',
+    data: '2024-01-15',
+    hora: '11:00',
+    status: 'concluido'
+  }
 ];
 
-export default function ServicosScreen({ theme, styles }) {
-  const [servicos, setServicos] = React.useState(mockServicos);
+const mockBarbeiros = ['Carlos', 'Pedro', 'Ana', 'Roberto'];
+const mockServicos = ['Corte Social', 'Barba', 'Corte + Barba', 'Sobrancelha'];
+
+export default function AgendamentosScreen({ theme, styles }) {
+  const [agendamentos, setAgendamentos] = React.useState(mockAgendamentos);
   const [modalVisible, setModalVisible] = React.useState(false);
-  const [editingServico, setEditingServico] = React.useState(null);
+  const [editingAgendamento, setEditingAgendamento] = React.useState(null);
+  const [filtroData, setFiltroData] = React.useState('');
+  const [filtroBarbeiro, setFiltroBarbeiro] = React.useState('');
 
   const [formData, setFormData] = React.useState({
-    nome: '',
-    preco: '',
-    duracao: '',
-    descricao: ''
+    cliente: '',
+    telefone: '',
+    servico: '',
+    barbeiro: '',
+    data: new Date().toISOString().split('T')[0],
+    hora: '09:00',
+    status: 'agendado'
   });
 
   const screenStyles = createScreenStyles(theme);
 
+  const agendamentosFiltrados = agendamentos.filter(ag => {
+    return (!filtroData || ag.data === filtroData) &&
+           (!filtroBarbeiro || ag.barbeiro === filtroBarbeiro);
+  });
+
   const handleSave = () => {
-    if (!formData.nome || !formData.preco || !formData.duracao) {
-      Alert.alert('Erro', 'Preencha nome, preço e duração');
+    if (!formData.cliente || !formData.telefone || !formData.servico || !formData.barbeiro) {
+      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
       return;
     }
 
-    const servicoData = {
-      ...formData,
-      preco: parseFloat(formData.preco),
-      duracao: parseInt(formData.duracao)
-    };
-
-    if (editingServico) {
-      setServicos(servicos.map(s => 
-        s.id === editingServico.id ? { ...servicoData, id: editingServico.id } : s
+    if (editingAgendamento) {
+      setAgendamentos(agendamentos.map(ag => 
+        ag.id === editingAgendamento.id ? { ...formData, id: editingAgendamento.id } : ag
       ));
     } else {
-      const novoServico = {
-        ...servicoData,
+      const novoAgendamento = {
+        ...formData,
         id: Date.now().toString()
       };
-      setServicos([...servicos, novoServico]);
+      setAgendamentos([...agendamentos, novoAgendamento]);
     }
 
     setModalVisible(false);
     resetForm();
   };
 
-  const handleEdit = (servico) => {
-    setEditingServico(servico);
-    setFormData({
-      nome: servico.nome,
-      preco: servico.preco.toString(),
-      duracao: servico.duracao.toString(),
-      descricao: servico.descricao
-    });
+  const handleEdit = (agendamento) => {
+    setEditingAgendamento(agendamento);
+    setFormData(agendamento);
     setModalVisible(true);
   };
 
   const handleDelete = (id) => {
     Alert.alert(
       'Confirmar Exclusão',
-      'Deseja realmente excluir este serviço?',
+      'Deseja realmente excluir este agendamento?',
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Excluir', 
           style: 'destructive',
-          onPress: () => setServicos(servicos.filter(s => s.id !== id))
+          onPress: () => setAgendamentos(agendamentos.filter(ag => ag.id !== id))
         }
       ]
     );
   };
 
-  const resetForm = () => {
-    setEditingServico(null);
-    setFormData({
-      nome: '',
-      preco: '',
-      duracao: '',
-      descricao: ''
+  const handleEnviarLembrete = (telefone, cliente, data, hora) => {
+    const mensagem = `Olá ${cliente}! Lembrete: seu agendamento na App Barber está marcado para ${data} às ${hora}.`;
+    const url = `sms:${telefone}?body=${encodeURIComponent(mensagem)}`;
+    
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Erro', 'Não foi possível abrir o aplicativo de mensagens');
     });
   };
 
-  const renderServico = ({ item }) => {
+  const resetForm = () => {
+    setEditingAgendamento(null);
+    setFormData({
+      cliente: '',
+      telefone: '',
+      servico: '',
+      barbeiro: '',
+      data: new Date().toISOString().split('T')[0],
+      hora: '09:00',
+      status: 'agendado'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      agendado: theme.colors.warning,
+      confirmado: theme.colors.primary,
+      concluido: theme.colors.success,
+      cancelado: theme.colors.danger
+    };
+    return colors[status] || theme.colors.textSecondary;
+  };
+
+  const renderAgendamento = ({ item }) => {
     return React.createElement(View, {
       key: item.id,
       style: screenStyles.card
@@ -96,29 +147,50 @@ export default function ServicosScreen({ theme, styles }) {
         style: screenStyles.cardHeader
       }, [
         React.createElement(Text, {
-          key: 'nome',
-          style: screenStyles.servicoNome
-        }, item.nome),
-        React.createElement(Text, {
-          key: 'preco',
-          style: screenStyles.servicoPreco
-        }, `R$ ${item.preco}`)
+          key: 'cliente',
+          style: screenStyles.clienteNome
+        }, item.cliente),
+        React.createElement(View, {
+          key: 'status',
+          style: [screenStyles.statusBadge, { backgroundColor: getStatusColor(item.status) }]
+        },
+          React.createElement(Text, {
+            style: screenStyles.statusText
+          }, item.status.toUpperCase())
+        )
       ]),
 
       React.createElement(Text, {
-        key: 'duracao',
+        key: 'telefone',
         style: screenStyles.cardInfo
-      }, `⏱ ${item.duracao} minutos`),
+      }, `📞 ${item.telefone}`),
 
       React.createElement(Text, {
-        key: 'descricao',
+        key: 'servico',
         style: screenStyles.cardInfo
-      }, item.descricao),
+      }, `✂️ ${item.servico} • ${item.barbeiro}`),
+
+      React.createElement(Text, {
+        key: 'horario',
+        style: screenStyles.cardInfo
+      }, `🕒 ${item.data} ${item.hora}`),
 
       React.createElement(View, {
         key: 'actions',
         style: screenStyles.actions
       }, [
+        React.createElement(TouchableOpacity, {
+          key: 'lembrete',
+          style: [screenStyles.actionButton, { backgroundColor: '#34C759' }],
+          onPress: () => handleEnviarLembrete(item.telefone, item.cliente, item.data, item.hora)
+        },
+          React.createElement(Ionicons, {
+            name: 'chatbubble',
+            size: 16,
+            color: 'white'
+          })
+        ),
+
         React.createElement(TouchableOpacity, {
           key: 'edit',
           style: [screenStyles.actionButton, { backgroundColor: theme.colors.primary }],
@@ -147,6 +219,7 @@ export default function ServicosScreen({ theme, styles }) {
   };
 
   return React.createElement(View, { style: styles.content }, [
+    // Header com filtros
     React.createElement(View, {
       key: 'header',
       style: screenStyles.header
@@ -154,7 +227,7 @@ export default function ServicosScreen({ theme, styles }) {
       React.createElement(Text, {
         key: 'title',
         style: screenStyles.title
-      }, 'Serviços'),
+      }, 'Agendamentos'),
 
       React.createElement(TouchableOpacity, {
         key: 'addButton',
@@ -172,16 +245,41 @@ export default function ServicosScreen({ theme, styles }) {
       )
     ]),
 
+    // Filtros
+    React.createElement(View, {
+      key: 'filtros',
+      style: screenStyles.filtrosContainer
+    }, [
+      React.createElement(TextInput, {
+        key: 'filtroData',
+        style: screenStyles.filtroInput,
+        placeholder: 'Data (YYYY-MM-DD)',
+        value: filtroData,
+        onChangeText: setFiltroData,
+        placeholderTextColor: theme.colors.textSecondary
+      }),
+
+      React.createElement(TextInput, {
+        key: 'filtroBarbeiro',
+        style: screenStyles.filtroInput,
+        placeholder: 'Filtrar por barbeiro',
+        value: filtroBarbeiro,
+        onChangeText: setFiltroBarbeiro,
+        placeholderTextColor: theme.colors.textSecondary
+      })
+    ]),
+
+    // Lista
     React.createElement(FlatList, {
       key: 'list',
-      data: servicos,
-      renderItem: renderServico,
+      data: agendamentosFiltrados,
+      renderItem: renderAgendamento,
       keyExtractor: item => item.id,
       style: screenStyles.list,
       contentContainerStyle: screenStyles.listContent
     }),
 
-    // Modal
+    // Modal para adicionar/editar
     React.createElement(Modal, {
       key: 'modal',
       visible: modalVisible,
@@ -191,44 +289,42 @@ export default function ServicosScreen({ theme, styles }) {
       React.createElement(View, { style: screenStyles.modalContainer },
         React.createElement(View, { style: screenStyles.modalContent },
           React.createElement(Text, { style: screenStyles.modalTitle }, 
-            editingServico ? 'Editar Serviço' : 'Novo Serviço'
+            editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'
           ),
           
           React.createElement(TextInput, {
             style: screenStyles.modalInput,
-            placeholder: 'Nome do Serviço',
+            placeholder: 'Nome do Cliente',
             placeholderTextColor: theme.colors.textSecondary,
-            value: formData.nome,
-            onChangeText: (text) => setFormData({...formData, nome: text})
+            value: formData.cliente,
+            onChangeText: (text) => setFormData({...formData, cliente: text})
           }),
           
+          React.createElement(TextInput, {
+            style: screenStyles.modalInput,
+            placeholder: 'Telefone',
+            placeholderTextColor: theme.colors.textSecondary,
+            value: formData.telefone,
+            onChangeText: (text) => setFormData({...formData, telefone: text}),
+            keyboardType: 'phone-pad'
+          }),
+
           React.createElement(View, { style: screenStyles.row },
             React.createElement(TextInput, {
               style: [screenStyles.modalInput, { flex: 1, marginRight: 10 }],
-              placeholder: 'Preço (R$)',
+              placeholder: 'Data',
               placeholderTextColor: theme.colors.textSecondary,
-              value: formData.preco,
-              onChangeText: (text) => setFormData({...formData, preco: text}),
-              keyboardType: 'decimal-pad'
+              value: formData.data,
+              onChangeText: (text) => setFormData({...formData, data: text})
             }),
             React.createElement(TextInput, {
               style: [screenStyles.modalInput, { flex: 1 }],
-              placeholder: 'Duração (min)',
+              placeholder: 'Hora',
               placeholderTextColor: theme.colors.textSecondary,
-              value: formData.duracao,
-              onChangeText: (text) => setFormData({...formData, duracao: text}),
-              keyboardType: 'numeric'
+              value: formData.hora,
+              onChangeText: (text) => setFormData({...formData, hora: text})
             })
           ),
-
-          React.createElement(TextInput, {
-            style: [screenStyles.modalInput, { height: 80, textAlignVertical: 'top' }],
-            placeholder: 'Descrição (opcional)',
-            placeholderTextColor: theme.colors.textSecondary,
-            value: formData.descricao,
-            onChangeText: (text) => setFormData({...formData, descricao: text}),
-            multiline: true
-          }),
 
           React.createElement(View, { style: screenStyles.modalButtons },
             React.createElement(TouchableOpacity, {
@@ -278,7 +374,29 @@ const createScreenStyles = (theme) => StyleSheet.create({
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  filtrosContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border
+  },
+  filtroInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 4,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background
   },
   list: {
     flex: 1
@@ -303,15 +421,20 @@ const createScreenStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8
   },
-  servicoNome: {
+  clienteNome: {
     fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.text
   },
-  servicoPreco: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.primary
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  statusText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold'
   },
   cardInfo: {
     fontSize: 14,
@@ -366,7 +489,8 @@ const createScreenStyles = (theme) => StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    marginTop: 10
   },
   modalButton: {
     flex: 1,

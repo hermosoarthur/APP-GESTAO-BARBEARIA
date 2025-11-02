@@ -1,315 +1,405 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Mock data
-const mockVendas = [
-  { id: '1', data: '2024-01-15', valor: 35, servico: 'Corte Social' },
-  { id: '2', data: '2024-01-15', valor: 25, servico: 'Barba' },
-  { id: '3', data: '2024-01-14', valor: 55, servico: 'Corte + Barba' },
-  { id: '4', data: '2024-01-14', valor: 35, servico: 'Corte Social' }
-];
+// Mock data para relatórios
+const mockRelatorios = {
+  vendas: [
+    { data: '2024-01-15', valor: 350 },
+    { data: '2024-01-14', valor: 280 },
+    { data: '2024-01-13', valor: 420 },
+    { data: '2024-01-12', valor: 310 },
+    { data: '2024-01-11', valor: 390 },
+    { data: '2024-01-10', valor: 270 },
+    { data: '2024-01-09', valor: 330 }
+  ],
+  servicos: [
+    { nome: 'Corte Social', quantidade: 15, valor: 525 },
+    { nome: 'Barba', quantidade: 8, valor: 200 },
+    { nome: 'Corte + Barba', quantidade: 12, valor: 660 },
+    { nome: 'Sobrancelha', quantidade: 5, valor: 75 }
+  ],
+  barbeiros: [
+    { nome: 'Carlos', atendimentos: 18, valor: 540 },
+    { nome: 'Pedro', atendimentos: 12, valor: 360 },
+    { nome: 'Ana', atendimentos: 9, valor: 360 }
+  ]
+};
 
-export default function RelatoriosScreen() {
-  const [periodo, setPeriodo] = React.useState('hoje');
-  const [dataInicio, setDataInicio] = React.useState(new Date().toISOString().split('T')[0]);
-  const [dataFim, setDataFim] = React.useState(new Date().toISOString().split('T')[0]);
+export default function RelatoriosScreen({ theme, styles }) {
+  const [periodo, setPeriodo] = React.useState('semana');
+  const [modalVisible, setModalVisible] = React.useState(false);
 
-  const getVendasFiltradas = () => {
-    const hoje = new Date().toISOString().split('T')[0];
-    
-    switch (periodo) {
-      case 'hoje':
-        return mockVendas.filter(v => v.data === hoje);
-      case 'semana':
-        // Simulação - na prática você calcularia a semana
-        return mockVendas.filter(v => {
-          const dataVenda = new Date(v.data);
-          const umaSemanaAtras = new Date();
-          umaSemanaAtras.setDate(umaSemanaAtras.getDate() - 7);
-          return dataVenda >= umaSemanaAtras;
-        });
-      case 'mes':
-        return mockVendas.filter(v => v.data.startsWith('2024-01'));
-      case 'personalizado':
-        return mockVendas.filter(v => v.data >= dataInicio && v.data <= dataFim);
-      default:
-        return mockVendas;
-    }
+  const screenStyles = createScreenStyles(theme);
+
+  const calcularTotais = () => {
+    const vendasPeriodo = periodo === 'semana' 
+      ? mockRelatorios.vendas.slice(0, 7)
+      : mockRelatorios.vendas;
+
+    const totalVendas = vendasPeriodo.reduce((sum, v) => sum + v.valor, 0);
+    const totalAtendimentos = mockRelatorios.servicos.reduce((sum, s) => sum + s.quantidade, 0);
+    const ticketMedio = totalAtendimentos > 0 ? totalVendas / totalAtendimentos : 0;
+
+    return { totalVendas, totalAtendimentos, ticketMedio };
   };
 
-  const vendasFiltradas = getVendasFiltradas();
-  const totalVendas = vendasFiltradas.reduce((sum, v) => sum + v.valor, 0);
-  const quantidadeVendas = vendasFiltradas.length;
-  const ticketMedio = quantidadeVendas > 0 ? totalVendas / quantidadeVendas : 0;
+  const { totalVendas, totalAtendimentos, ticketMedio } = calcularTotais();
 
-  const servicosMaisVendidos = vendasFiltradas.reduce((acc, venda) => {
-    acc[venda.servico] = (acc[venda.servico] || 0) + 1;
-    return acc;
-  }, {});
+  const handleExportCSV = () => {
+    Alert.alert(
+      'Exportar Relatório',
+      'Deseja exportar o relatório em formato CSV?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Exportar', 
+          onPress: () => {
+            // Simulação de exportação
+            Alert.alert('Sucesso', 'Relatório exportado com sucesso!');
+          }
+        }
+      ]
+    );
+  };
 
-  return React.createElement(ScrollView, { 
-    style: styles.container,
-    contentContainerStyle: styles.content
+  const StatCard = ({ title, value, subtitle, color }) => {
+    return React.createElement(View, {
+      style: screenStyles.statCard
+    }, [
+      React.createElement(Text, {
+        key: 'value',
+        style: [screenStyles.statValue, { color: color || theme.colors.primary }]
+      }, value),
+      React.createElement(Text, {
+        key: 'title',
+        style: screenStyles.statTitle
+      }, title),
+      subtitle && React.createElement(Text, {
+        key: 'subtitle',
+        style: screenStyles.statSubtitle
+      }, subtitle)
+    ]);
+  };
+
+  const ServicoItem = ({ servico, index }) => {
+    return React.createElement(View, {
+      key: servico.nome,
+      style: screenStyles.servicoItem
+    }, [
+      React.createElement(View, {
+        key: 'info',
+        style: screenStyles.servicoInfo
+      }, [
+        React.createElement(Text, {
+          key: 'nome',
+          style: screenStyles.servicoNome
+        }, servico.nome),
+        React.createElement(Text, {
+          key: 'quantidade',
+          style: screenStyles.servicoQuantidade
+        }, `${servico.quantidade} atendimentos`)
+      ]),
+      React.createElement(Text, {
+        key: 'valor',
+        style: screenStyles.servicoValor
+      }, `R$ ${servico.valor}`)
+    ]);
+  };
+
+  const BarbeiroItem = ({ barbeiro, index }) => {
+    return React.createElement(View, {
+      key: barbeiro.nome,
+      style: screenStyles.barbeiroItem
+    }, [
+      React.createElement(View, {
+        key: 'info',
+        style: screenStyles.barbeiroInfo
+      }, [
+        React.createElement(Text, {
+          key: 'nome',
+          style: screenStyles.barbeiroNome
+        }, barbeiro.nome),
+        React.createElement(Text, {
+          key: 'atendimentos',
+          style: screenStyles.barbeiroAtendimentos
+        }, `${barbeiro.atendimentos} atendimentos`)
+      ]),
+      React.createElement(Text, {
+        key: 'valor',
+        style: screenStyles.barbeiroValor
+      }, `R$ ${barbeiro.valor}`)
+    ]);
+  };
+
+  const VendaDiariaItem = ({ venda, index }) => {
+    return React.createElement(View, {
+      key: venda.data,
+      style: screenStyles.vendaItem
+    }, [
+      React.createElement(Text, {
+        key: 'data',
+        style: screenStyles.vendaData
+      }, formatData(venda.data)),
+      React.createElement(Text, {
+        key: 'valor',
+        style: screenStyles.vendaValor
+      }, `R$ ${venda.valor}`)
+    ]);
+  };
+
+  const formatData = (data) => {
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
+
+  return React.createElement(ScrollView, {
+    style: styles.content,
+    contentContainerStyle: screenStyles.container
   }, [
-    React.createElement(Text, {
-      key: "title",
-      style: styles.title
-    }, 'Relatórios'),
-
-    // Filtros de período
+    // Header
     React.createElement(View, {
-      key: "filtros",
-      style: styles.filtrosContainer
+      key: 'header',
+      style: screenStyles.header
     }, [
+      React.createElement(Text, {
+        key: 'title',
+        style: screenStyles.title
+      }, 'Relatórios'),
       React.createElement(TouchableOpacity, {
-        key: "hoje",
-        style: [styles.filtroButton, periodo === 'hoje' && styles.filtroAtivo],
-        onPress: () => setPeriodo('hoje')
-      },
-        React.createElement(Text, {
-          style: [styles.filtroText, periodo === 'hoje' && styles.filtroTextAtivo]
-        }, 'Hoje')
-      ),
-      React.createElement(TouchableOpacity, {
-        key: "semana",
-        style: [styles.filtroButton, periodo === 'semana' && styles.filtroAtivo],
-        onPress: () => setPeriodo('semana')
-      },
-        React.createElement(Text, {
-          style: [styles.filtroText, periodo === 'semana' && styles.filtroTextAtivo]
-        }, 'Semana')
-      ),
-      React.createElement(TouchableOpacity, {
-        key: "mes",
-        style: [styles.filtroButton, periodo === 'mes' && styles.filtroAtivo],
-        onPress: () => setPeriodo('mes')
-      },
-        React.createElement(Text, {
-          style: [styles.filtroText, periodo === 'mes' && styles.filtroTextAtivo]
-        }, 'Mês')
-      )
-    ]),
-
-    // Cards de resumo
-    React.createElement(View, {
-      key: "resumo",
-      style: styles.resumoContainer
-    }, [
-      React.createElement(View, {
-        key: "total",
-        style: styles.resumoCard
+        key: 'exportButton',
+        style: screenStyles.exportButton,
+        onPress: handleExportCSV
       }, [
         React.createElement(Ionicons, {
-          key: "icon",
-          name: 'cash',
-          size: 32,
-          color: '#34C759'
+          key: 'icon',
+          name: 'download',
+          size: 20,
+          color: theme.colors.primary
         }),
         React.createElement(Text, {
-          key: "valor",
-          style: styles.resumoValor
-        }, `R$ ${totalVendas.toFixed(2)}`),
-        React.createElement(Text, {
-          key: "label",
-          style: styles.resumoLabel
-        }, 'Total Vendido')
-      ]),
-
-      React.createElement(View, {
-        key: "quantidade",
-        style: styles.resumoCard
-      }, [
-        React.createElement(Ionicons, {
-          key: "icon",
-          name: 'people',
-          size: 32,
-          color: '#007AFF'
-        }),
-        React.createElement(Text, {
-          key: "valor",
-          style: styles.resumoValor
-        }, quantidadeVendas.toString()),
-        React.createElement(Text, {
-          key: "label",
-          style: styles.resumoLabel
-        }, 'Atendimentos')
-      ]),
-
-      React.createElement(View, {
-        key: "ticket",
-        style: styles.resumoCard
-      }, [
-        React.createElement(Ionicons, {
-          key: "icon",
-          name: 'trending-up',
-          size: 32,
-          color: '#FF9500'
-        }),
-        React.createElement(Text, {
-          key: "valor",
-          style: styles.resumoValor
-        }, `R$ ${ticketMedio.toFixed(2)}`),
-        React.createElement(Text, {
-          key: "label",
-          style: styles.resumoLabel
-        }, 'Ticket Médio')
+          key: 'text',
+          style: screenStyles.exportButtonText
+        }, 'CSV')
       ])
     ]),
 
-    // Serviços mais vendidos
+    // Filtros de período
     React.createElement(View, {
-      key: "servicos",
-      style: styles.servicosContainer
+      key: 'filtros',
+      style: screenStyles.filtrosContainer
     }, [
-      React.createElement(Text, {
-        key: "titulo",
-        style: styles.sectionTitle
-      }, 'Serviços Mais Vendidos'),
-      
-      Object.entries(servicosMaisVendidos).map(([servico, quantidade], index) => 
-        React.createElement(View, {
-          key: servico,
-          style: styles.servicoItem
-        }, [
-          React.createElement(Text, {
-            key: "nome",
-            style: styles.servicoNome
-          }, servico),
-          React.createElement(Text, {
-            key: "quantidade",
-            style: styles.servicoQuantidade
-          }, `${quantidade} vendas`)
-        ])
+      React.createElement(TouchableOpacity, {
+        key: 'semana',
+        style: [
+          screenStyles.filtroButton,
+          periodo === 'semana' && screenStyles.filtroButtonActive
+        ],
+        onPress: () => setPeriodo('semana')
+      },
+        React.createElement(Text, {
+          style: [
+            screenStyles.filtroButtonText,
+            periodo === 'semana' && screenStyles.filtroButtonTextActive
+          ]
+        }, '7 Dias')
+      ),
+      React.createElement(TouchableOpacity, {
+        key: 'mes',
+        style: [
+          screenStyles.filtroButton,
+          periodo === 'mes' && screenStyles.filtroButtonActive
+        ],
+        onPress: () => setPeriodo('mes')
+      },
+        React.createElement(Text, {
+          style: [
+            screenStyles.filtroButtonText,
+            periodo === 'mes' && screenStyles.filtroButtonTextActive
+          ]
+        }, '30 Dias')
       )
     ]),
 
-    // Últimas vendas
+    // Estatísticas principais
     React.createElement(View, {
-      key: "ultimasVendas",
-      style: styles.vendasContainer
+      key: 'estatisticas',
+      style: screenStyles.estatisticasContainer
+    }, [
+      React.createElement(StatCard, {
+        key: 'vendas',
+        title: 'Total de Vendas',
+        value: `R$ ${totalVendas}`,
+        color: theme.colors.success
+      }),
+      React.createElement(StatCard, {
+        key: 'atendimentos',
+        title: 'Atendimentos',
+        value: totalAtendimentos.toString(),
+        color: theme.colors.primary
+      }),
+      React.createElement(StatCard, {
+        key: 'ticket',
+        title: 'Ticket Médio',
+        value: `R$ ${ticketMedio.toFixed(2)}`,
+        color: theme.colors.warning
+      })
+    ]),
+
+    // Serviços mais realizados
+    React.createElement(View, {
+      key: 'servicos',
+      style: screenStyles.section
     }, [
       React.createElement(Text, {
-        key: "titulo",
-        style: styles.sectionTitle
-      }, 'Últimas Vendas'),
-      
-      vendasFiltradas.slice(0, 5).map(venda =>
-        React.createElement(View, {
-          key: venda.id,
-          style: styles.vendaItem
-        }, [
-          React.createElement(View, {
-            key: "info",
-            style: styles.vendaInfo
-          }, [
-            React.createElement(Text, {
-              key: "servico",
-              style: styles.vendaServico
-            }, venda.servico),
-            React.createElement(Text, {
-              key: "data",
-              style: styles.vendaData
-            }, venda.data)
-          ]),
-          React.createElement(Text, {
-            key: "valor",
-            style: styles.vendaValor
-          }, `R$ ${venda.valor.toFixed(2)}`)
-        ])
+        key: 'title',
+        style: screenStyles.sectionTitle
+      }, 'Serviços Mais Realizados'),
+      ...mockRelatorios.servicos.map((servico, index) => 
+        React.createElement(ServicoItem, {
+          key: servico.nome,
+          servico: servico,
+          index: index
+        })
+      )
+    ]),
+
+    // Performance dos barbeiros
+    React.createElement(View, {
+      key: 'barbeiros',
+      style: screenStyles.section
+    }, [
+      React.createElement(Text, {
+        key: 'title',
+        style: screenStyles.sectionTitle
+      }, 'Performance da Equipe'),
+      ...mockRelatorios.barbeiros.map((barbeiro, index) => 
+        React.createElement(BarbeiroItem, {
+          key: barbeiro.nome,
+          barbeiro: barbeiro,
+          index: index
+        })
+      )
+    ]),
+
+    // Vendas por dia
+    React.createElement(View, {
+      key: 'vendasDiarias',
+      style: screenStyles.section
+    }, [
+      React.createElement(Text, {
+        key: 'title',
+        style: screenStyles.sectionTitle
+      }, 'Vendas por Dia'),
+      ...mockRelatorios.vendas.slice(0, 7).map((venda, index) => 
+        React.createElement(VendaDiariaItem, {
+          key: venda.data,
+          venda: venda,
+          index: index
+        })
       )
     ])
   ]);
 }
 
-const styles = StyleSheet.create({
+const createScreenStyles = (theme) => StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5'
-  },
-  content: {
     padding: 16
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    textAlign: 'center'
+    color: theme.colors.text
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.primary
+  },
+  exportButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '600',
+    marginLeft: 4
   },
   filtrosContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 20
   },
   filtroButton: {
     flex: 1,
     padding: 12,
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: theme.colors.card,
     marginHorizontal: 4,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+    borderRadius: 8,
+    alignItems: 'center'
   },
-  filtroAtivo: {
-    backgroundColor: '#007AFF'
+  filtroButtonActive: {
+    backgroundColor: theme.colors.primary
   },
-  filtroText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666'
+  filtroButtonText: {
+    color: theme.colors.text,
+    fontWeight: '600'
   },
-  filtroTextAtivo: {
+  filtroButtonTextActive: {
     color: 'white'
   },
-  resumoContainer: {
+  estatisticasContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20
+    marginBottom: 24
   },
-  resumoCard: {
+  statCard: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
+    borderRadius: 12,
     marginHorizontal: 4,
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
-  resumoValor: {
+  statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginVertical: 8
+    marginBottom: 4
   },
-  resumoLabel: {
+  statTitle: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     textAlign: 'center'
   },
-  servicosContainer: {
-    backgroundColor: 'white',
+  statSubtitle: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 2
+  },
+  section: {
+    backgroundColor: theme.colors.card,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 12
   },
   servicoItem: {
@@ -318,26 +408,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderBottomColor: theme.colors.border
+  },
+  servicoInfo: {
+    flex: 1
   },
   servicoNome: {
     fontSize: 14,
-    color: '#333'
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 2
   },
   servicoQuantidade: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600'
+    fontSize: 12,
+    color: theme.colors.textSecondary
   },
-  vendasContainer: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2
+  servicoValor: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.success
+  },
+  barbeiroItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border
+  },
+  barbeiroInfo: {
+    flex: 1
+  },
+  barbeiroNome: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 2
+  },
+  barbeiroAtendimentos: {
+    fontSize: 12,
+    color: theme.colors.textSecondary
+  },
+  barbeiroValor: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.primary
   },
   vendaItem: {
     flexDirection: 'row',
@@ -345,24 +460,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  vendaInfo: {
-    flex: 1
-  },
-  vendaServico: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333'
+    borderBottomColor: theme.colors.border
   },
   vendaData: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2
+    fontSize: 14,
+    color: theme.colors.text
   },
   vendaValor: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#34C759'
+    color: theme.colors.success
   }
 });

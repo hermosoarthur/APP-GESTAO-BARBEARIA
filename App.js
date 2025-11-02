@@ -2,51 +2,69 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Importar telas diretamente
-import LoginScreen from './src/screens/LoginScreen';
-import AgendaScreen from './src/screens/AgendaScreen';
+// Importar telas
+import DashboardScreen from './src/screens/DashboardScreen';
+import AgendamentosScreen from './src/screens/AgendamentosScreen';
 import ServicosScreen from './src/screens/ServicosScreen';
 import VendasScreen from './src/screens/VendasScreen';
+import FuncionariosScreen from './src/screens/FuncionariosScreen';
 import RelatoriosScreen from './src/screens/RelatoriosScreen';
 
-// Sistema de navegação simples
+// Sistema de navegação
 const SCREENS = {
-  LOGIN: 'LOGIN',
-  AGENDA: 'AGENDA',
+  DASHBOARD: 'DASHBOARD',
+  AGENDAMENTOS: 'AGENDAMENTOS',
   SERVICOS: 'SERVICOS',
   VENDAS: 'VENDAS',
+  FUNCIONARIOS: 'FUNCIONARIOS',
   RELATORIOS: 'RELATORIOS'
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = React.useState(SCREENS.AGENDA); // Começa direto na agenda para testes
-  const [user, setUser] = React.useState({ id: '1', name: 'Barbeiro' });
+  const [currentScreen, setCurrentScreen] = React.useState(SCREENS.DASHBOARD);
+  const [darkMode, setDarkMode] = React.useState(true);
+
+  const theme = {
+    dark: darkMode,
+    colors: {
+      background: darkMode ? '#0f0f0f' : '#f8f9fa',
+      card: darkMode ? '#1a1a1a' : '#ffffff',
+      text: darkMode ? '#ffffff' : '#000000',
+      textSecondary: darkMode ? '#b0b0b0' : '#666666',
+      primary: '#007AFF',
+      success: '#34C759',
+      warning: '#FF9500',
+      danger: '#FF3B30',
+      border: darkMode ? '#333333' : '#e0e0e0'
+    }
+  };
+
+  const styles = createStyles(theme);
 
   const renderScreen = () => {
+    const screenProps = {
+      theme: theme,
+      styles: styles
+    };
+
     switch (currentScreen) {
-      case SCREENS.LOGIN:
-        return React.createElement(LoginScreen, {
-          onLogin: () => setCurrentScreen(SCREENS.AGENDA),
-          navigation: { navigate: setCurrentScreen }
+      case SCREENS.DASHBOARD:
+        return React.createElement(DashboardScreen, {
+          ...screenProps,
+          onNavigate: setCurrentScreen
         });
-      case SCREENS.AGENDA:
-        return React.createElement(AgendaScreen, {
-          key: 'agenda'
-        });
+      case SCREENS.AGENDAMENTOS:
+        return React.createElement(AgendamentosScreen, screenProps);
       case SCREENS.SERVICOS:
-        return React.createElement(ServicosScreen, {
-          key: 'servicos'
-        });
+        return React.createElement(ServicosScreen, screenProps);
       case SCREENS.VENDAS:
-        return React.createElement(VendasScreen, {
-          key: 'vendas'
-        });
+        return React.createElement(VendasScreen, screenProps);
+      case SCREENS.FUNCIONARIOS:
+        return React.createElement(FuncionariosScreen, screenProps);
       case SCREENS.RELATORIOS:
-        return React.createElement(RelatoriosScreen, {
-          key: 'relatorios'
-        });
+        return React.createElement(RelatoriosScreen, screenProps);
       default:
-        return React.createElement(AgendaScreen);
+        return React.createElement(DashboardScreen, screenProps);
     }
   };
 
@@ -55,84 +73,124 @@ export default function App() {
   return React.createElement(View, { style: styles.container }, [
     React.createElement(StatusBar, {
       key: 'statusbar',
-      barStyle: 'dark-content'
+      barStyle: darkMode ? 'light-content' : 'dark-content',
+      backgroundColor: theme.colors.background
     }),
     
+    // Header
+    React.createElement(View, {
+      key: 'header',
+      style: styles.header
+    }, [
+      React.createElement(Text, {
+        key: 'title',
+        style: styles.headerTitle
+      }, 'App Barber'),
+      React.createElement(TouchableOpacity, {
+        key: 'themeToggle',
+        style: styles.themeButton,
+        onPress: () => setDarkMode(!darkMode)
+      },
+        React.createElement(Ionicons, {
+          name: darkMode ? 'sunny' : 'moon',
+          size: 24,
+          color: theme.colors.primary
+        })
+      )
+    ]),
+
     // Conteúdo principal
     React.createElement(View, {
       key: 'content',
       style: styles.content
     }, renderScreen()),
 
-    // Barra de navegação inferior customizada
+    // Barra de navegação inferior
     React.createElement(View, {
       key: 'tabbar',
       style: styles.tabBar
     }, [
       React.createElement(TouchableOpacity, {
         key: 'tab1',
-        style: [styles.tab, isActive(SCREENS.AGENDA) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.AGENDA)
+        style: [styles.tab, isActive(SCREENS.DASHBOARD) && styles.tabActive],
+        onPress: () => setCurrentScreen(SCREENS.DASHBOARD)
       }, [
         React.createElement(Ionicons, {
           key: 'icon1',
-          name: isActive(SCREENS.AGENDA) ? 'calendar' : 'calendar-outline',
-          size: 24,
-          color: isActive(SCREENS.AGENDA) ? '#007AFF' : '#666'
+          name: isActive(SCREENS.DASHBOARD) ? 'home' : 'home-outline',
+          size: 22,
+          color: isActive(SCREENS.DASHBOARD) ? theme.colors.primary : theme.colors.textSecondary
         }),
         React.createElement(Text, {
           key: 'text1',
-          style: [styles.tabText, isActive(SCREENS.AGENDA) && styles.tabTextActive]
-        }, 'Agenda')
+          style: [styles.tabText, isActive(SCREENS.DASHBOARD) && styles.tabTextActive]
+        }, 'Home')
       ]),
 
       React.createElement(TouchableOpacity, {
         key: 'tab2',
+        style: [styles.tab, isActive(SCREENS.AGENDAMENTOS) && styles.tabActive],
+        onPress: () => setCurrentScreen(SCREENS.AGENDAMENTOS)
+      }, [
+        React.createElement(Ionicons, {
+          key: 'icon2',
+          name: isActive(SCREENS.AGENDAMENTOS) ? 'calendar' : 'calendar-outline',
+          size: 22,
+          color: isActive(SCREENS.AGENDAMENTOS) ? theme.colors.primary : theme.colors.textSecondary
+        }),
+        React.createElement(Text, {
+          key: 'text2',
+          style: [styles.tabText, isActive(SCREENS.AGENDAMENTOS) && styles.tabTextActive]
+        }, 'Agenda')
+      ]),
+
+      React.createElement(TouchableOpacity, {
+        key: 'tab3',
         style: [styles.tab, isActive(SCREENS.SERVICOS) && styles.tabActive],
         onPress: () => setCurrentScreen(SCREENS.SERVICOS)
       }, [
         React.createElement(Ionicons, {
-          key: 'icon2',
+          key: 'icon3',
           name: isActive(SCREENS.SERVICOS) ? 'cut' : 'cut-outline',
-          size: 24,
-          color: isActive(SCREENS.SERVICOS) ? '#007AFF' : '#666'
+          size: 22,
+          color: isActive(SCREENS.SERVICOS) ? theme.colors.primary : theme.colors.textSecondary
         }),
         React.createElement(Text, {
-          key: 'text2',
+          key: 'text3',
           style: [styles.tabText, isActive(SCREENS.SERVICOS) && styles.tabTextActive]
         }, 'Serviços')
       ]),
 
       React.createElement(TouchableOpacity, {
-        key: 'tab3',
-        style: [styles.tab, isActive(SCREENS.VENDAS) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.VENDAS)
+        key: 'tab4',
+        style: [styles.tab, isActive(SCREENS.FUNCIONARIOS) && styles.tabActive],
+        onPress: () => setCurrentScreen(SCREENS.FUNCIONARIOS)
       }, [
         React.createElement(Ionicons, {
-          key: 'icon3',
-          name: isActive(SCREENS.VENDAS) ? 'cash' : 'cash-outline',
-          size: 24,
-          color: isActive(SCREENS.VENDAS) ? '#007AFF' : '#666'
+          key: 'icon4',
+          name: isActive(SCREENS.FUNCIONARIOS) ? 'people' : 'people-outline',
+          size: 22,
+          color: isActive(SCREENS.FUNCIONARIOS) ? theme.colors.primary : theme.colors.textSecondary
         }),
         React.createElement(Text, {
-          key: 'text3',
-          style: [styles.tabText, isActive(SCREENS.VENDAS) && styles.tabTextActive]
-        }, 'Vendas')
+          key: 'text4',
+          style: [styles.tabText, isActive(SCREENS.FUNCIONARIOS) && styles.tabTextActive]
+        }, 'Equipe')
       ]),
 
       React.createElement(TouchableOpacity, {
-        key: 'tab4',
+        key: 'tab5',
         style: [styles.tab, isActive(SCREENS.RELATORIOS) && styles.tabActive],
         onPress: () => setCurrentScreen(SCREENS.RELATORIOS)
       }, [
         React.createElement(Ionicons, {
-          key: 'icon4',
+          key: 'icon5',
           name: isActive(SCREENS.RELATORIOS) ? 'stats-chart' : 'stats-chart-outline',
-          size: 24,
-          color: isActive(SCREENS.RELATORIOS) ? '#007AFF' : '#666'
+          size: 22,
+          color: isActive(SCREENS.RELATORIOS) ? theme.colors.primary : theme.colors.textSecondary
         }),
         React.createElement(Text, {
-          key: 'text4',
+          key: 'text5',
           style: [styles.tabText, isActive(SCREENS.RELATORIOS) && styles.tabTextActive]
         }, 'Relatórios')
       ])
@@ -140,21 +198,40 @@ export default function App() {
   ]);
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: theme.colors.background
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.text
+  },
+  themeButton: {
+    padding: 8,
+    borderRadius: 20
   },
   content: {
     flex: 1
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
     paddingBottom: 5,
-    paddingTop: 5
+    paddingTop: 8
   },
   tab: {
     flex: 1,
@@ -166,11 +243,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginTop: 4
   },
   tabTextActive: {
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '600'
   }
 });
