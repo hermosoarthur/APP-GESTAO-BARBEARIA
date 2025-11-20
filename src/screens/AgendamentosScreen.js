@@ -10,7 +10,9 @@ import {
   ScrollView, 
   Platform,
   Modal,
-  Linking
+  Linking,
+  StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
@@ -43,17 +45,32 @@ const formatPhone = (text) => {
 };
 
 const createScreenStyles = (theme) => StyleSheet.create({
-  content: { flex: 1, backgroundColor: theme.colors.background },
+  // Container principal seguro
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  content: { 
+    flex: 1, 
+    backgroundColor: theme.colors.background,
+  },
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    padding: 20, 
+    padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Mais espaço no topo
     backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+    borderBottomColor: theme.colors.border,
+    marginBottom: 10
   },
-  title: { fontSize: 24, fontWeight: 'bold', color: theme.colors.text },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: theme.colors.text,
+    marginTop: Platform.OS === 'ios' ? 10 : 0
+  },
   addButton: { 
     backgroundColor: theme.colors.primary, 
     width: 44, 
@@ -65,14 +82,16 @@ const createScreenStyles = (theme) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5
+    elevation: 5,
+    marginTop: Platform.OS === 'ios' ? 10 : 0
   },
   filtrosContainer: { 
     flexDirection: 'row', 
     padding: 16, 
     backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border
+    borderBottomColor: theme.colors.border,
+    marginBottom: 10
   },
   filtroInput: { 
     flex: 1, 
@@ -85,13 +104,18 @@ const createScreenStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.background 
   },
   list: { flex: 1 }, 
-  listContent: { padding: 16 },
+  listContent: { 
+    padding: 16, 
+    paddingBottom: 30,
+    paddingTop: 10 
+  },
   emptyState: {
     alignItems: 'center',
     padding: 40,
     backgroundColor: theme.colors.card,
     borderRadius: 12,
-    marginTop: 20
+    marginTop: 20,
+    marginHorizontal: 20
   },
   emptyText: {
     fontSize: 18,
@@ -111,6 +135,7 @@ const createScreenStyles = (theme) => StyleSheet.create({
     padding: 16, 
     marginVertical: 6, 
     borderRadius: 12, 
+    marginHorizontal: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -131,19 +156,24 @@ const createScreenStyles = (theme) => StyleSheet.create({
   actionButton: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
   
   // Modal Styles
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)'
+    padding: 20
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '90%',
+    backgroundColor: theme.colors.card,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: Platform.OS === 'ios' ? 40 : 20
   },
   modalContent: {
-    backgroundColor: theme.colors.card,
     padding: 20,
-    borderRadius: 12,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%'
   },
   modalTitle: {
     fontSize: 20,
@@ -206,7 +236,8 @@ const createScreenStyles = (theme) => StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    marginBottom: 10
   },
   column: {
     flex: 1,
@@ -215,7 +246,8 @@ const createScreenStyles = (theme) => StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20
+    marginTop: 20,
+    marginBottom: 10
   },
   modalButton: {
     flex: 1,
@@ -239,18 +271,44 @@ const createScreenStyles = (theme) => StyleSheet.create({
     fontWeight: '600'
   },
 
+  // DateTimePicker Styles
+  dateTimeContainer: {
+    marginBottom: 10,
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
+    padding: 10
+  },
+  dateTimeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 10
+  },
+  dateTimeButton: {
+    padding: 10,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 5,
+    minWidth: 80,
+    alignItems: 'center'
+  },
+  dateTimeButtonText: {
+    color: 'white',
+    fontWeight: '600'
+  },
+
   // Status Modal Styles
-  statusModalContainer: {
+  statusModalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)'
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 20
   },
-  statusModalContent: {
+  statusModalContainer: {
     backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 12,
-    width: '80%',
+    width: '90%',
     maxWidth: 300
   },
   statusModalTitle: {
@@ -317,6 +375,10 @@ export default function AgendamentosScreen({ theme, styles }) {
   const [showStatusOptions, setShowStatusOptions] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
 
+  // Estados para DateTimePicker
+  const [tempDate, setTempDate] = useState(new Date());
+  const [tempTime, setTempTime] = useState(new Date());
+
   const [formData, setFormData] = useState({
     cliente: '', 
     telefone: '', 
@@ -352,31 +414,62 @@ export default function AgendamentosScreen({ theme, styles }) {
     setShowTimePicker(false);
     setShowStatusOptions(false);
     setSelectedAgendamento(null);
+    setTempDate(new Date());
+    setTempTime(new Date());
   };
 
-  // Funções do DateTimePicker
+  // Funções do DateTimePicker corrigidas
   const onDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios');
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
     if (selectedDate) {
-      try {
+      setTempDate(selectedDate);
+      
+      // No Android, confirma automaticamente
+      if (Platform.OS === 'android') {
         const dateString = selectedDate.toISOString().split('T')[0];
         setFormData({...formData, data: dateString});
-      } catch (error) {
-        console.error('Erro ao processar data:', error);
       }
     }
   };
 
   const onTimeChange = (event, selectedTime) => {
-    setShowTimePicker(Platform.OS === 'ios');
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    
     if (selectedTime) {
-      try {
+      setTempTime(selectedTime);
+      
+      // No Android, confirma automaticamente
+      if (Platform.OS === 'android') {
         const timeString = selectedTime.toTimeString().split(' ')[0].substring(0, 5);
         setFormData({...formData, hora: timeString});
-      } catch (error) {
-        console.error('Erro ao processar hora:', error);
       }
     }
+  };
+
+  // Funções para confirmar data/hora no iOS
+  const confirmDate = () => {
+    const dateString = tempDate.toISOString().split('T')[0];
+    setFormData({...formData, data: dateString});
+    setShowDatePicker(false);
+  };
+
+  const confirmTime = () => {
+    const timeString = tempTime.toTimeString().split(' ')[0].substring(0, 5);
+    setFormData({...formData, hora: timeString});
+    setShowTimePicker(false);
+  };
+
+  const cancelDate = () => {
+    setShowDatePicker(false);
+  };
+
+  const cancelTime = () => {
+    setShowTimePicker(false);
   };
 
   useEffect(() => { 
@@ -642,229 +735,296 @@ export default function AgendamentosScreen({ theme, styles }) {
 
   const screenStyles = createScreenStyles(theme);
 
-  return React.createElement(View, { style: styles.content },
-    React.createElement(View, { style: screenStyles.header },
-      React.createElement(Text, { style: screenStyles.title }, "Agendamentos"),
-      React.createElement(TouchableOpacity, {
-        style: screenStyles.addButton,
-        onPress: () => { resetForm(); setModalVisible(true); }
-      },
-        React.createElement(Ionicons, { name: "add", size: 24, color: "white" })
-      )
-    ),
-
-    React.createElement(View, { style: screenStyles.filtrosContainer },
-      React.createElement(TextInput, {
-        style: screenStyles.filtroInput,
-        placeholder: "Data (DD/MM/AAAA)",
-        value: filtros.data,
-        onChangeText: (text) => setFiltros({...filtros, data: text}),
-        placeholderTextColor: theme.colors.textSecondary
-      }),
-      React.createElement(TextInput, {
-        style: screenStyles.filtroInput,
-        placeholder: "Barbeiro",
-        value: filtros.barbeiro,
-        onChangeText: (text) => setFiltros({...filtros, barbeiro: text}),
-        placeholderTextColor: theme.colors.textSecondary
-      })
-    ),
-
-    React.createElement(FlatList, {
-      data: agendamentosFiltrados,
-      renderItem: renderAgendamento,
-      keyExtractor: item => item.id,
-      style: screenStyles.list,
-      contentContainerStyle: screenStyles.listContent,
-      ListEmptyComponent: React.createElement(View, { style: screenStyles.emptyState },
-        React.createElement(Ionicons, { name: "calendar-outline", size: 48, color: theme.colors.textSecondary }),
-        React.createElement(Text, { style: screenStyles.emptyText }, "Nenhum agendamento encontrado"),
-        React.createElement(Text, { style: screenStyles.emptySubtext },
-          "Clique no + para adicionar seu primeiro agendamento"
-        )
-      )
+  // Usando SafeAreaView para evitar sobreposição
+  return React.createElement(SafeAreaView, { 
+    style: screenStyles.safeArea 
+  },
+    React.createElement(StatusBar, {
+      backgroundColor: theme.colors.card,
+      barStyle: theme.dark ? 'light-content' : 'dark-content'
     }),
+    React.createElement(View, { style: screenStyles.content },
+      React.createElement(View, { style: screenStyles.header },
+        React.createElement(Text, { style: screenStyles.title }, "Agendamentos"),
+        React.createElement(TouchableOpacity, {
+          style: screenStyles.addButton,
+          onPress: () => { resetForm(); setModalVisible(true); }
+        },
+          React.createElement(Ionicons, { name: "add", size: 24, color: "white" })
+        )
+      ),
 
-    // Modal de Agendamento
-    React.createElement(Modal, {
-      visible: modalVisible,
-      animationType: "slide",
-      transparent: true
-    },
-      React.createElement(View, { style: screenStyles.modalContainer },
-        React.createElement(View, { style: screenStyles.modalContent },
-          React.createElement(ScrollView, null,
-            React.createElement(Text, { style: screenStyles.modalTitle },
-              editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'
-            ),
-            
-            React.createElement(Text, { style: screenStyles.modalLabel }, "Cliente *"),
-            React.createElement(TextInput, {
-              style: screenStyles.modalInput,
-              placeholder: "Nome completo do cliente",
-              placeholderTextColor: theme.colors.textSecondary,
-              value: formData.cliente,
-              onChangeText: (text) => setFormData({...formData, cliente: text}),
-              maxLength: 50
-            }),
+      React.createElement(View, { style: screenStyles.filtrosContainer },
+        React.createElement(TextInput, {
+          style: screenStyles.filtroInput,
+          placeholder: "Data (DD/MM/AAAA)",
+          value: filtros.data,
+          onChangeText: (text) => setFiltros({...filtros, data: text}),
+          placeholderTextColor: theme.colors.textSecondary
+        }),
+        React.createElement(TextInput, {
+          style: screenStyles.filtroInput,
+          placeholder: "Barbeiro",
+          value: filtros.barbeiro,
+          onChangeText: (text) => setFiltros({...filtros, barbeiro: text}),
+          placeholderTextColor: theme.colors.textSecondary
+        })
+      ),
 
-            React.createElement(Text, { style: screenStyles.modalLabel }, "Telefone *"),
-            React.createElement(TextInput, {
-              style: screenStyles.modalInput,
-              placeholder: "(11) 99999-9999",
-              placeholderTextColor: theme.colors.textSecondary,
-              value: formData.telefone,
-              onChangeText: (text) => setFormData({...formData, telefone: formatPhone(text)}),
-              keyboardType: "phone-pad",
-              maxLength: 15
-            }),
+      React.createElement(FlatList, {
+        data: agendamentosFiltrados,
+        renderItem: renderAgendamento,
+        keyExtractor: item => item.id,
+        style: screenStyles.list,
+        contentContainerStyle: screenStyles.listContent,
+        ListEmptyComponent: React.createElement(View, { style: screenStyles.emptyState },
+          React.createElement(Ionicons, { name: "calendar-outline", size: 48, color: theme.colors.textSecondary }),
+          React.createElement(Text, { style: screenStyles.emptyText }, "Nenhum agendamento encontrado"),
+          React.createElement(Text, { style: screenStyles.emptySubtext },
+            "Clique no + para adicionar seu primeiro agendamento"
+          )
+        )
+      }),
 
-            React.createElement(Text, { style: screenStyles.modalLabel }, "Serviço *"),
-            React.createElement(TouchableOpacity, {
-              style: screenStyles.selectButton,
-              onPress: () => setShowServicos(!showServicos)
-            },
-              React.createElement(Text, {
-                style: formData.servico ? screenStyles.selectButtonText : screenStyles.selectButtonPlaceholder
-              }, formData.servico || 'Selecione um serviço'),
-              React.createElement(Ionicons, { name: "chevron-down", size: 20, color: theme.colors.textSecondary })
-            ),
-
-            showServicos && React.createElement(View, { style: screenStyles.optionsContainer },
-              servicos.map(servico => 
-                React.createElement(TouchableOpacity, {
-                  key: servico.id,
-                  style: screenStyles.option,
-                  onPress: () => {
-                    setFormData({...formData, servico: servico.nome});
-                    setShowServicos(false);
-                  }
+      // Modal de Agendamento
+      React.createElement(Modal, {
+        visible: modalVisible,
+        animationType: "slide",
+        transparent: true
+      },
+        React.createElement(SafeAreaView, { style: screenStyles.safeArea },
+          React.createElement(View, { style: screenStyles.modalOverlay },
+            React.createElement(View, { style: screenStyles.modalContainer },
+              React.createElement(View, { style: screenStyles.modalContent },
+                React.createElement(ScrollView, { 
+                  contentContainerStyle: { paddingBottom: 20 },
+                  showsVerticalScrollIndicator: false 
                 },
-                  React.createElement(Text, { style: screenStyles.optionText }, `${servico.nome} - R$ ${servico.preco}`)
-                )
-              )
-            ),
+                  React.createElement(Text, { style: screenStyles.modalTitle },
+                    editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'
+                  ),
+                  
+                  React.createElement(Text, { style: screenStyles.modalLabel }, "Cliente *"),
+                  React.createElement(TextInput, {
+                    style: screenStyles.modalInput,
+                    placeholder: "Nome completo do cliente",
+                    placeholderTextColor: theme.colors.textSecondary,
+                    value: formData.cliente,
+                    onChangeText: (text) => setFormData({...formData, cliente: text}),
+                    maxLength: 50
+                  }),
 
-            React.createElement(Text, { style: screenStyles.modalLabel }, "Barbeiro *"),
-            React.createElement(TouchableOpacity, {
-              style: screenStyles.selectButton,
-              onPress: () => setShowBarbeiros(!showBarbeiros)
-            },
-              React.createElement(Text, {
-                style: formData.barbeiro ? screenStyles.selectButtonText : screenStyles.selectButtonPlaceholder
-              }, formData.barbeiro || 'Selecione um barbeiro'),
-              React.createElement(Ionicons, { name: "chevron-down", size: 20, color: theme.colors.textSecondary })
-            ),
+                  React.createElement(Text, { style: screenStyles.modalLabel }, "Telefone *"),
+                  React.createElement(TextInput, {
+                    style: screenStyles.modalInput,
+                    placeholder: "(11) 99999-9999",
+                    placeholderTextColor: theme.colors.textSecondary,
+                    value: formData.telefone,
+                    onChangeText: (text) => setFormData({...formData, telefone: formatPhone(text)}),
+                    keyboardType: "phone-pad",
+                    maxLength: 15
+                  }),
 
-            showBarbeiros && React.createElement(View, { style: screenStyles.optionsContainer },
-              funcionarios.map(funcionario => 
-                React.createElement(TouchableOpacity, {
-                  key: funcionario.id,
-                  style: screenStyles.option,
-                  onPress: () => {
-                    setFormData({...formData, barbeiro: funcionario.nome});
-                    setShowBarbeiros(false);
-                  }
-                },
-                  React.createElement(Text, { style: screenStyles.optionText }, funcionario.nome)
-                )
-              )
-            ),
+                  React.createElement(Text, { style: screenStyles.modalLabel }, "Serviço *"),
+                  React.createElement(TouchableOpacity, {
+                    style: screenStyles.selectButton,
+                    onPress: () => setShowServicos(!showServicos)
+                  },
+                    React.createElement(Text, {
+                      style: formData.servico ? screenStyles.selectButtonText : screenStyles.selectButtonPlaceholder
+                    }, formData.servico || 'Selecione um serviço'),
+                    React.createElement(Ionicons, { name: "chevron-down", size: 20, color: theme.colors.textSecondary })
+                  ),
 
-            React.createElement(View, { style: screenStyles.row },
-              React.createElement(View, { style: screenStyles.column },
-                React.createElement(Text, { style: screenStyles.modalLabel }, "Data *"),
-                React.createElement(TouchableOpacity, {
-                  style: screenStyles.selectButton,
-                  onPress: () => setShowDatePicker(true)
-                },
-                  React.createElement(Text, { style: screenStyles.selectButtonText }, formatDisplayDate(formData.data)),
-                  React.createElement(Ionicons, { name: "calendar", size: 18, color: theme.colors.textSecondary })
-                )
-              ),
+                  showServicos && React.createElement(View, { style: screenStyles.optionsContainer },
+                    servicos.map(servico => 
+                      React.createElement(TouchableOpacity, {
+                        key: servico.id,
+                        style: screenStyles.option,
+                        onPress: () => {
+                          setFormData({...formData, servico: servico.nome});
+                          setShowServicos(false);
+                        }
+                      },
+                        React.createElement(Text, { style: screenStyles.optionText }, `${servico.nome} - R$ ${servico.preco}`)
+                      )
+                    )
+                  ),
 
-              React.createElement(View, { style: screenStyles.column },
-                React.createElement(Text, { style: screenStyles.modalLabel }, "Hora *"),
-                React.createElement(TouchableOpacity, {
-                  style: screenStyles.selectButton,
-                  onPress: () => setShowTimePicker(true)
-                },
-                  React.createElement(Text, { style: screenStyles.selectButtonText }, formData.hora),
-                  React.createElement(Ionicons, { name: "time", size: 18, color: theme.colors.textSecondary })
-                )
-              )
-            ),
+                  React.createElement(Text, { style: screenStyles.modalLabel }, "Barbeiro *"),
+                  React.createElement(TouchableOpacity, {
+                    style: screenStyles.selectButton,
+                    onPress: () => setShowBarbeiros(!showBarbeiros)
+                  },
+                    React.createElement(Text, {
+                      style: formData.barbeiro ? screenStyles.selectButtonText : screenStyles.selectButtonPlaceholder
+                    }, formData.barbeiro || 'Selecione um barbeiro'),
+                    React.createElement(Ionicons, { name: "chevron-down", size: 20, color: theme.colors.textSecondary })
+                  ),
 
-            showDatePicker && React.createElement(DateTimePicker, {
-              value: new Date(formData.data),
-              mode: "date",
-              display: Platform.OS === 'ios' ? 'spinner' : 'default',
-              onChange: onDateChange,
-              minimumDate: new Date()
-            }),
+                  showBarbeiros && React.createElement(View, { style: screenStyles.optionsContainer },
+                    funcionarios.map(funcionario => 
+                      React.createElement(TouchableOpacity, {
+                        key: funcionario.id,
+                        style: screenStyles.option,
+                        onPress: () => {
+                          setFormData({...formData, barbeiro: funcionario.nome});
+                          setShowBarbeiros(false);
+                        }
+                      },
+                        React.createElement(Text, { style: screenStyles.optionText }, funcionario.nome)
+                      )
+                    )
+                  ),
 
-            showTimePicker && React.createElement(DateTimePicker, {
-              value: new Date(`1970-01-01T${formData.hora}`),
-              mode: "time",
-              display: Platform.OS === 'ios' ? 'spinner' : 'default',
-              onChange: onTimeChange,
-              minuteInterval: 30
-            }),
+                  React.createElement(View, { style: screenStyles.row },
+                    React.createElement(View, { style: screenStyles.column },
+                      React.createElement(Text, { style: screenStyles.modalLabel }, "Data *"),
+                      React.createElement(TouchableOpacity, {
+                        style: screenStyles.selectButton,
+                        onPress: () => {
+                          setTempDate(new Date(formData.data || new Date()));
+                          setShowDatePicker(true);
+                        }
+                      },
+                        React.createElement(Text, { style: screenStyles.selectButtonText }, 
+                          formData.data ? formatDisplayDate(formData.data) : 'Selecione uma data'
+                        ),
+                        React.createElement(Ionicons, { name: "calendar", size: 18, color: theme.colors.textSecondary })
+                      )
+                    ),
 
-            React.createElement(View, { style: screenStyles.modalButtons },
-              React.createElement(TouchableOpacity, {
-                style: [screenStyles.modalButton, screenStyles.cancelButton],
-                onPress: () => { setModalVisible(false); resetForm(); }
-              },
-                React.createElement(Text, { style: screenStyles.cancelButtonText }, "Cancelar")
-              ),
-              React.createElement(TouchableOpacity, {
-                style: [screenStyles.modalButton, screenStyles.saveButton],
-                onPress: handleSave
-              },
-                React.createElement(Text, { style: screenStyles.saveButtonText },
-                  editingAgendamento ? 'Atualizar' : 'Agendar'
+                    React.createElement(View, { style: screenStyles.column },
+                      React.createElement(Text, { style: screenStyles.modalLabel }, "Hora *"),
+                      React.createElement(TouchableOpacity, {
+                        style: screenStyles.selectButton,
+                        onPress: () => {
+                          const [hours, minutes] = (formData.hora || '09:00').split(':');
+                          const timeDate = new Date();
+                          timeDate.setHours(parseInt(hours), parseInt(minutes));
+                          setTempTime(timeDate);
+                          setShowTimePicker(true);
+                        }
+                      },
+                        React.createElement(Text, { style: screenStyles.selectButtonText }, 
+                          formData.hora || 'Selecione um horário'
+                        ),
+                        React.createElement(Ionicons, { name: "time", size: 18, color: theme.colors.textSecondary })
+                      )
+                    )
+                  ),
+
+                  // DateTimePicker para Data com botões de confirmação (iOS)
+                  showDatePicker && React.createElement(View, { style: screenStyles.dateTimeContainer },
+                    React.createElement(DateTimePicker, {
+                      value: tempDate,
+                      mode: "date",
+                      display: "spinner",
+                      onChange: onDateChange,
+                      minimumDate: new Date(),
+                      style: { height: 120 }
+                    }),
+                    Platform.OS === 'ios' && React.createElement(View, { style: screenStyles.dateTimeButtons },
+                      React.createElement(TouchableOpacity, {
+                        style: [screenStyles.dateTimeButton, { backgroundColor: '#666' }],
+                        onPress: cancelDate
+                      },
+                        React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Cancelar")
+                      ),
+                      React.createElement(TouchableOpacity, {
+                        style: screenStyles.dateTimeButton,
+                        onPress: confirmDate
+                      },
+                        React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Confirmar")
+                      )
+                    )
+                  ),
+
+                  // DateTimePicker para Hora com botões de confirmação (iOS)
+                  showTimePicker && React.createElement(View, { style: screenStyles.dateTimeContainer },
+                    React.createElement(DateTimePicker, {
+                      value: tempTime,
+                      mode: "time",
+                      display: "spinner",
+                      onChange: onTimeChange,
+                      minuteInterval: 30,
+                      style: { height: 120 }
+                    }),
+                    Platform.OS === 'ios' && React.createElement(View, { style: screenStyles.dateTimeButtons },
+                      React.createElement(TouchableOpacity, {
+                        style: [screenStyles.dateTimeButton, { backgroundColor: '#666' }],
+                        onPress: cancelTime
+                      },
+                        React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Cancelar")
+                      ),
+                      React.createElement(TouchableOpacity, {
+                        style: screenStyles.dateTimeButton,
+                        onPress: confirmTime
+                      },
+                        React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Confirmar")
+                      )
+                    )
+                  ),
+
+                  React.createElement(View, { style: screenStyles.modalButtons },
+                    React.createElement(TouchableOpacity, {
+                      style: [screenStyles.modalButton, screenStyles.cancelButton],
+                      onPress: () => { setModalVisible(false); resetForm(); }
+                    },
+                      React.createElement(Text, { style: screenStyles.cancelButtonText }, "Cancelar")
+                    ),
+                    React.createElement(TouchableOpacity, {
+                      style: [screenStyles.modalButton, screenStyles.saveButton],
+                      onPress: handleSave
+                    },
+                      React.createElement(Text, { style: screenStyles.saveButtonText },
+                        editingAgendamento ? 'Atualizar' : 'Agendar'
+                      )
+                    )
+                  )
                 )
               )
             )
           )
         )
-      )
-    ),
+      ),
 
-    // Modal de Opções de Status
-    React.createElement(Modal, {
-      visible: showStatusOptions,
-      transparent: true,
-      animationType: "fade"
-    },
-      React.createElement(View, { style: screenStyles.statusModalContainer },
-        React.createElement(View, { style: screenStyles.statusModalContent },
-          React.createElement(Text, { style: screenStyles.statusModalTitle }, "Alterar Status"),
-          React.createElement(Text, { style: screenStyles.statusModalSubtitle },
-            `${selectedAgendamento?.cliente || 'Cliente'} - ${formatDisplayDate(selectedAgendamento?.data)} ${selectedAgendamento?.hora || '--:--'}`
-          ),
-          
-          statusOptions.map((status) =>
-            React.createElement(TouchableOpacity, {
-              key: status.value,
-              style: [screenStyles.statusOption, { borderLeftColor: status.color }],
-              onPress: () => {
-                handleStatusChange(selectedAgendamento, status.value);
-              }
-            },
-              React.createElement(View, { style: [screenStyles.statusDot, { backgroundColor: status.color }] }),
-              React.createElement(Text, { style: screenStyles.statusOptionText }, status.label),
-              selectedAgendamento?.status === status.value &&
-                React.createElement(Ionicons, { name: "checkmark", size: 20, color: status.color })
+      // Modal de Opções de Status
+      React.createElement(Modal, {
+        visible: showStatusOptions,
+        transparent: true,
+        animationType: "fade"
+      },
+        React.createElement(SafeAreaView, { style: screenStyles.safeArea },
+          React.createElement(View, { style: screenStyles.statusModalOverlay },
+            React.createElement(View, { style: screenStyles.statusModalContainer },
+              React.createElement(Text, { style: screenStyles.statusModalTitle }, "Alterar Status"),
+              React.createElement(Text, { style: screenStyles.statusModalSubtitle },
+                `${selectedAgendamento?.cliente || 'Cliente'} - ${formatDisplayDate(selectedAgendamento?.data)} ${selectedAgendamento?.hora || '--:--'}`
+              ),
+              
+              statusOptions.map((status) =>
+                React.createElement(TouchableOpacity, {
+                  key: status.value,
+                  style: [screenStyles.statusOption, { borderLeftColor: status.color }],
+                  onPress: () => {
+                    handleStatusChange(selectedAgendamento, status.value);
+                  }
+                },
+                  React.createElement(View, { style: [screenStyles.statusDot, { backgroundColor: status.color }] }),
+                  React.createElement(Text, { style: screenStyles.statusOptionText }, status.label),
+                  selectedAgendamento?.status === status.value &&
+                    React.createElement(Ionicons, { name: "checkmark", size: 20, color: status.color })
+                )
+              ),
+              
+              React.createElement(TouchableOpacity, {
+                style: screenStyles.statusCancelButton,
+                onPress: () => setShowStatusOptions(false)
+              },
+                React.createElement(Text, { style: screenStyles.statusCancelText }, "Cancelar")
+              )
             )
-          ),
-          
-          React.createElement(TouchableOpacity, {
-            style: screenStyles.statusCancelButton,
-            onPress: () => setShowStatusOptions(false)
-          },
-            React.createElement(Text, { style: screenStyles.statusCancelText }, "Cancelar")
           )
         )
       )
