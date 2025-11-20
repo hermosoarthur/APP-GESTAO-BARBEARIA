@@ -1,30 +1,57 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const mockServicos = [
-  { id: '1', nome: 'Corte Social', preco: 35, duracao: 30, descricao: 'Corte tradicional masculino' },
-  { id: '2', nome: 'Barba', preco: 25, duracao: 20, descricao: 'Aparar e modelar barba' },
-  { id: '3', nome: 'Corte + Barba', preco: 55, duracao: 50, descricao: 'Pacote completo' }
-];
+import { databaseService } from '../../services/databaseService';
 
 export default function ServicosScreen({ theme, styles }) {
-  const [servicos, setServicos] = React.useState(mockServicos);
-  const [modalVisible, setModalVisible] = React.useState(false);
-  const [editingServico, setEditingServico] = React.useState(null);
+  const [servicos, setServicos] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingServico, setEditingServico] = useState(null);
 
-  const [formData, setFormData] = React.useState({
-    nome: '',
-    preco: '',
-    duracao: '',
-    descricao: ''
+  const [formData, setFormData] = useState({ 
+    nome: '', 
+    preco: '', 
+    duracao: '', 
+    descricao: '' 
   });
 
-  const screenStyles = createScreenStyles(theme);
+  const [errors, setErrors] = useState({});
 
-  const handleSave = () => {
-    if (!formData.nome || !formData.preco || !formData.duracao) {
-      Alert.alert('Erro', 'Preencha nome, preço e duração');
+  useEffect(() => { 
+    loadServicos(); 
+  }, []);
+
+  const loadServicos = async () => {
+    const result = await databaseService.read('servicos');
+    if (result.success) setServicos(result.data);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.nome || formData.nome.length < 3) {
+      newErrors.nome = 'Nome deve ter pelo menos 3 caracteres';
+    }
+
+    if (!formData.preco || parseFloat(formData.preco) <= 0) {
+      newErrors.preco = 'Preço deve ser maior que zero';
+    }
+
+    if (!formData.duracao || parseInt(formData.duracao) <= 0) {
+      newErrors.duracao = 'Duração deve ser maior que zero';
+    }
+
+    if (parseInt(formData.duracao) > 240) {
+      newErrors.duracao = 'Duração máxima é 240 minutos';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      Alert.alert('Erro', 'Corrija os erros antes de salvar');
       return;
     }
 
@@ -34,303 +61,307 @@ export default function ServicosScreen({ theme, styles }) {
       duracao: parseInt(formData.duracao)
     };
 
-    if (editingServico) {
-      setServicos(servicos.map(s => 
-        s.id === editingServico.id ? { ...servicoData, id: editingServico.id } : s
-      ));
+    const result = editingServico 
+      ? await databaseService.update('servicos', editingServico.id, servicoData)
+      : await databaseService.create('servicos', servicoData);
+
+    if (result.success) {
+      await loadServicos();
+      setModalVisible(false);
+      resetForm();
+      Alert.alert('Sucesso', editingServico ? 'Serviço atualizado!' : 'Serviço criado!');
     } else {
-      const novoServico = {
-        ...servicoData,
-        id: Date.now().toString()
-      };
-      setServicos([...servicos, novoServico]);
+      Alert.alert('Erro', result.error);
     }
-
-    setModalVisible(false);
-    resetForm();
   };
 
-  const handleEdit = (servico) => {
-    setEditingServico(servico);
-    setFormData({
-      nome: servico.nome,
-      preco: servico.preco.toString(),
-      duracao: servico.duracao.toString(),
-      descricao: servico.descricao
-    });
-    setModalVisible(true);
-  };
-
-  const handleDelete = (id) => {
-    Alert.alert(
-      'Confirmar Exclusão',
-      'Deseja realmente excluir este serviço?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive',
-          onPress: () => setServicos(servicos.filter(s => s.id !== id))
+  const handleDelete = async (id) => {
+    Alert.alert('Confirmar', 'Excluir este serviço?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { 
+        text: 'Excluir', 
+        onPress: async () => {
+          const result = await databaseService.delete('servicos', id);
+          if (result.success) {
+            await loadServicos();
+            Alert.alert('Sucesso', 'Serviço excluído!');
+          }
         }
-      ]
-    );
+      }
+    ]);
   };
 
   const resetForm = () => {
     setEditingServico(null);
-    setFormData({
-      nome: '',
-      preco: '',
-      duracao: '',
-      descricao: ''
-    });
+    setFormData({ nome: '', preco: '', duracao: '', descricao: '' });
+    setErrors({});
   };
 
-  const renderServico = ({ item }) => {
-    return React.createElement(View, {
-      key: item.id,
-      style: screenStyles.card
-    }, [
-      React.createElement(View, {
-        key: 'header',
-        style: screenStyles.cardHeader
-      }, [
-        React.createElement(Text, {
-          key: 'nome',
-          style: screenStyles.servicoNome
-        }, item.nome),
-        React.createElement(Text, {
-          key: 'preco',
-          style: screenStyles.servicoPreco
-        }, `R$ ${item.preco}`)
-      ]),
-
-      React.createElement(Text, {
-        key: 'duracao',
-        style: screenStyles.cardInfo
-      }, `⏱ ${item.duracao} minutos`),
-
-      React.createElement(Text, {
-        key: 'descricao',
-        style: screenStyles.cardInfo
-      }, item.descricao),
-
-      React.createElement(View, {
-        key: 'actions',
-        style: screenStyles.actions
-      }, [
-        React.createElement(TouchableOpacity, {
-          key: 'edit',
-          style: [screenStyles.actionButton, { backgroundColor: theme.colors.primary }],
-          onPress: () => handleEdit(item)
-        },
-          React.createElement(Ionicons, {
-            name: 'create',
-            size: 16,
-            color: 'white'
-          })
-        ),
-
-        React.createElement(TouchableOpacity, {
-          key: 'delete',
-          style: [screenStyles.actionButton, { backgroundColor: theme.colors.danger }],
-          onPress: () => handleDelete(item.id)
-        },
-          React.createElement(Ionicons, {
-            name: 'trash',
-            size: 16,
-            color: 'white'
-          })
-        )
-      ])
-    ]);
+  const formatPrice = (text) => {
+    // Remove tudo que não é número ou vírgula/ponto
+    const clean = text.replace(/[^\d,.]/g, '');
+    
+    // Substitui vírgula por ponto para cálculo
+    const numericValue = clean.replace(',', '.');
+    
+    // Verifica se é um número válido
+    if (numericValue === '' || numericValue === '.') {
+      return clean;
+    }
+    
+    return clean;
   };
 
-  return React.createElement(View, { style: styles.content }, [
-    React.createElement(View, {
-      key: 'header',
-      style: screenStyles.header
-    }, [
-      React.createElement(Text, {
-        key: 'title',
-        style: screenStyles.title
-      }, 'Serviços'),
+  const renderServico = ({ item }) => (
+    <View style={screenStyles.card}>
+      <View style={screenStyles.cardHeader}>
+        <View style={screenStyles.servicoInfo}>
+          <Text style={screenStyles.servicoNome}>{item.nome}</Text>
+          <Text style={screenStyles.servicoPreco}>R$ {item.preco}</Text>
+        </View>
+        <Text style={screenStyles.servicoDuracao}>⏱ {item.duracao}min</Text>
+      </View>
+      
+      {item.descricao ? (
+        <Text style={screenStyles.cardInfo}>{item.descricao}</Text>
+      ) : null}
+      
+      <View style={screenStyles.actions}>
+        <TouchableOpacity 
+          style={[screenStyles.actionButton, { backgroundColor: theme.colors.primary }]} 
+          onPress={() => { 
+            setEditingServico(item); 
+            setFormData({ 
+              ...item, 
+              preco: item.preco.toString(), 
+              duracao: item.duracao.toString() 
+            }); 
+            setModalVisible(true); 
+          }}
+        >
+          <Ionicons name="create" size={16} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[screenStyles.actionButton, { backgroundColor: theme.colors.danger }]} 
+          onPress={() => handleDelete(item.id)}
+        >
+          <Ionicons name="trash" size={16} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-      React.createElement(TouchableOpacity, {
-        key: 'addButton',
-        style: screenStyles.addButton,
-        onPress: () => {
-          resetForm();
-          setModalVisible(true);
+  const screenStyles = createScreenStyles(theme);
+
+  return (
+    <View style={styles.content}>
+      <View style={screenStyles.header}>
+        <Text style={screenStyles.title}>Serviços</Text>
+        <TouchableOpacity 
+          style={screenStyles.addButton} 
+          onPress={() => { resetForm(); setModalVisible(true); }}
+        >
+          <Ionicons name="add" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+
+      <FlatList 
+        data={servicos} 
+        renderItem={renderServico} 
+        keyExtractor={item => item.id} 
+        style={screenStyles.list} 
+        contentContainerStyle={screenStyles.listContent}
+        ListEmptyComponent={
+          <View style={screenStyles.emptyState}>
+            <Ionicons name="cut-outline" size={48} color={theme.colors.textSecondary} />
+            <Text style={screenStyles.emptyText}>Nenhum serviço cadastrado</Text>
+            <Text style={screenStyles.emptySubtext}>
+              Clique no + para adicionar seu primeiro serviço
+            </Text>
+          </View>
         }
-      },
-        React.createElement(Ionicons, {
-          name: 'add',
-          size: 24,
-          color: 'white'
-        })
-      )
-    ]),
+      />
 
-    React.createElement(FlatList, {
-      key: 'list',
-      data: servicos,
-      renderItem: renderServico,
-      keyExtractor: item => item.id,
-      style: screenStyles.list,
-      contentContainerStyle: screenStyles.listContent
-    }),
+      {/* Modal de Serviço */}
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={screenStyles.modalContainer}>
+          <View style={screenStyles.modalContent}>
+            <ScrollView>
+              <Text style={screenStyles.modalTitle}>
+                {editingServico ? 'Editar Serviço' : 'Novo Serviço'}
+              </Text>
+              
+              <Text style={screenStyles.modalLabel}>Nome do Serviço *</Text>
+              <TextInput
+                style={[
+                  screenStyles.modalInput,
+                  errors.nome && screenStyles.inputError
+                ]}
+                placeholder="Ex: Corte Social, Barba, etc."
+                placeholderTextColor={theme.colors.textSecondary}
+                value={formData.nome}
+                onChangeText={(text) => {
+                  setFormData({...formData, nome: text});
+                  if (errors.nome) setErrors({...errors, nome: null});
+                }}
+                maxLength={50}
+              />
+              {errors.nome && <Text style={screenStyles.errorText}>{errors.nome}</Text>}
 
-    // Modal
-    React.createElement(Modal, {
-      key: 'modal',
-      visible: modalVisible,
-      animationType: 'slide',
-      transparent: true
-    },
-      React.createElement(View, { style: screenStyles.modalContainer },
-        React.createElement(View, { style: screenStyles.modalContent },
-          React.createElement(Text, { style: screenStyles.modalTitle }, 
-            editingServico ? 'Editar Serviço' : 'Novo Serviço'
-          ),
-          
-          React.createElement(TextInput, {
-            style: screenStyles.modalInput,
-            placeholder: 'Nome do Serviço',
-            placeholderTextColor: theme.colors.textSecondary,
-            value: formData.nome,
-            onChangeText: (text) => setFormData({...formData, nome: text})
-          }),
-          
-          React.createElement(View, { style: screenStyles.row },
-            React.createElement(TextInput, {
-              style: [screenStyles.modalInput, { flex: 1, marginRight: 10 }],
-              placeholder: 'Preço (R$)',
-              placeholderTextColor: theme.colors.textSecondary,
-              value: formData.preco,
-              onChangeText: (text) => setFormData({...formData, preco: text}),
-              keyboardType: 'decimal-pad'
-            }),
-            React.createElement(TextInput, {
-              style: [screenStyles.modalInput, { flex: 1 }],
-              placeholder: 'Duração (min)',
-              placeholderTextColor: theme.colors.textSecondary,
-              value: formData.duracao,
-              onChangeText: (text) => setFormData({...formData, duracao: text}),
-              keyboardType: 'numeric'
-            })
-          ),
+              <View style={screenStyles.row}>
+                <View style={screenStyles.column}>
+                  <Text style={screenStyles.modalLabel}>Preço (R$) *</Text>
+                  <TextInput
+                    style={[
+                      screenStyles.modalInput,
+                      errors.preco && screenStyles.inputError
+                    ]}
+                    placeholder="0,00"
+                    placeholderTextColor={theme.colors.textSecondary}
+                    value={formData.preco}
+                    onChangeText={(text) => {
+                      setFormData({...formData, preco: formatPrice(text)});
+                      if (errors.preco) setErrors({...errors, preco: null});
+                    }}
+                    keyboardType="decimal-pad"
+                  />
+                  {errors.preco && <Text style={screenStyles.errorText}>{errors.preco}</Text>}
+                </View>
 
-          React.createElement(TextInput, {
-            style: [screenStyles.modalInput, { height: 80, textAlignVertical: 'top' }],
-            placeholder: 'Descrição (opcional)',
-            placeholderTextColor: theme.colors.textSecondary,
-            value: formData.descricao,
-            onChangeText: (text) => setFormData({...formData, descricao: text}),
-            multiline: true
-          }),
+                <View style={screenStyles.column}>
+                  <Text style={screenStyles.modalLabel}>Duração (min) *</Text>
+                  <TextInput
+                    style={[
+                      screenStyles.modalInput,
+                      errors.duracao && screenStyles.inputError
+                    ]}
+                    placeholder="30"
+                    placeholderTextColor={theme.colors.textSecondary}
+                    value={formData.duracao}
+                    onChangeText={(text) => {
+                      // Permite apenas números
+                      const clean = text.replace(/[^\d]/g, '');
+                      setFormData({...formData, duracao: clean});
+                      if (errors.duracao) setErrors({...errors, duracao: null});
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                  />
+                  {errors.duracao && <Text style={screenStyles.errorText}>{errors.duracao}</Text>}
+                </View>
+              </View>
 
-          React.createElement(View, { style: screenStyles.modalButtons },
-            React.createElement(TouchableOpacity, {
-              style: [screenStyles.modalButton, screenStyles.cancelButton],
-              onPress: () => {
-                setModalVisible(false);
-                resetForm();
-              }
-            },
-              React.createElement(Text, { style: screenStyles.cancelButtonText }, 'Cancelar')
-            ),
-            React.createElement(TouchableOpacity, {
-              style: [screenStyles.modalButton, screenStyles.saveButton],
-              onPress: handleSave
-            },
-              React.createElement(Text, { style: screenStyles.saveButtonText }, 'Salvar')
-            )
-          )
-        )
-      )
-    )
-  ]);
+              <Text style={screenStyles.modalLabel}>Descrição (opcional)</Text>
+              <TextInput
+                style={[screenStyles.modalInput, { height: 80, textAlignVertical: 'top' }]}
+                placeholder="Descreva o serviço oferecido..."
+                placeholderTextColor={theme.colors.textSecondary}
+                value={formData.descricao}
+                onChangeText={(text) => setFormData({...formData, descricao: text})}
+                multiline={true}
+                maxLength={200}
+              />
+              <Text style={screenStyles.charCount}>
+                {formData.descricao.length}/200 caracteres
+              </Text>
+
+              <View style={screenStyles.modalButtons}>
+                <TouchableOpacity 
+                  style={[screenStyles.modalButton, screenStyles.cancelButton]} 
+                  onPress={() => { setModalVisible(false); resetForm(); }}
+                >
+                  <Text style={screenStyles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[screenStyles.modalButton, screenStyles.saveButton]} 
+                  onPress={handleSave}
+                >
+                  <Text style={screenStyles.saveButtonText}>
+                    {editingServico ? 'Atualizar' : 'Criar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }
 
 const createScreenStyles = (theme) => StyleSheet.create({
-  content: {
-    flex: 1,
-    backgroundColor: theme.colors.background
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+  content: { flex: 1, backgroundColor: theme.colors.background },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 20, 
     backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.text
+  title: { fontSize: 24, fontWeight: 'bold', color: theme.colors.text },
+  addButton: { 
+    backgroundColor: theme.colors.primary, 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5
   },
-  addButton: {
-    backgroundColor: theme.colors.primary,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  list: {
-    flex: 1
-  },
-  listContent: {
-    padding: 16
-  },
-  card: {
+  list: { flex: 1 }, 
+  listContent: { padding: 16 },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
     backgroundColor: theme.colors.card,
-    padding: 16,
-    marginVertical: 6,
     borderRadius: 12,
+    marginTop: 20
+  },
+  emptyText: {
+    fontSize: 18,
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginTop: 12,
+    textAlign: 'center'
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8
+  },
+  card: { 
+    backgroundColor: theme.colors.card, 
+    padding: 16, 
+    marginVertical: 6, 
+    borderRadius: 12, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8
+  cardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start', 
+    marginBottom: 8 
   },
-  servicoNome: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text
-  },
-  servicoPreco: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.primary
-  },
-  cardInfo: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: 4
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 12
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8
-  },
+  servicoInfo: { flex: 1 },
+  servicoNome: { fontSize: 18, fontWeight: 'bold', color: theme.colors.text, marginBottom: 4 },
+  servicoPreco: { fontSize: 16, fontWeight: 'bold', color: theme.colors.primary },
+  servicoDuracao: { fontSize: 14, color: theme.colors.textSecondary },
+  cardInfo: { fontSize: 14, color: theme.colors.textSecondary, marginTop: 8, lineHeight: 20 },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
+  actionButton: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  
+  // Modal Styles
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -342,7 +373,8 @@ const createScreenStyles = (theme) => StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     width: '90%',
-    maxWidth: 400
+    maxWidth: 400,
+    maxHeight: '80%'
   },
   modalTitle: {
     fontSize: 20,
@@ -351,22 +383,50 @@ const createScreenStyles = (theme) => StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center'
   },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 8,
+    marginTop: 8
+  },
   modalInput: {
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
-    marginBottom: 15,
     fontSize: 16,
     color: theme.colors.text,
     backgroundColor: theme.colors.background
   },
+  inputError: {
+    borderColor: theme.colors.danger
+  },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 8
+  },
   row: {
-    flexDirection: 'row'
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  column: {
+    flex: 1,
+    marginHorizontal: 4
+  },
+  charCount: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    textAlign: 'right',
+    marginTop: -8,
+    marginBottom: 16
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    marginTop: 20
   },
   modalButton: {
     flex: 1,

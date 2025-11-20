@@ -1,103 +1,125 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { authService } from '../../services/authService';
+import { databaseService } from '../../services/databaseService';
 
 export default function LoginScreen({ onLogin }) {
-  const [phoneNumber, setPhoneNumber] = React.useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [sentCode, setSentCode] = useState('');
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 10) {
-      Alert.alert('Atenção', 'Digite um número de telefone válido com DDD');
+  const handleSendCode = async () => {
+    if (!email || !email.includes('@')) {
+      Alert.alert('Erro', 'Digite um email válido');
       return;
     }
 
-    // Login automático
-    Alert.alert('Sucesso', 'Login realizado com sucesso!', [
-      { text: 'OK', onPress: onLogin }
-    ]);
+    setLoading(true);
+    const result = await authService.sendVerificationCode(email);
+    setLoading(false);
+
+    if (result.success) {
+      setSentCode(result.code);
+      setStep(2);
+      Alert.alert('Sucesso', 'Código enviado para seu email!');
+    } else {
+      Alert.alert('Erro', result.error);
+    }
   };
 
-  const formatPhone = (text) => {
-    const clean = text.replace(/\D/g, '');
-    if (clean.length <= 2) return clean;
-    if (clean.length <= 6) return `(${clean.slice(0, 2)}) ${clean.slice(2)}`;
-    if (clean.length <= 10) return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
-    return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`;
+  const handleVerifyCode = async () => {
+    if (!authService.validateCode(code, sentCode)) {
+      Alert.alert('Erro', 'Código inválido');
+      return;
+    }
+
+    const userResult = await databaseService.getUserByEmail(email);
+    let userData;
+
+    if (userResult.success) {
+      if (userResult.user) {
+        userData = userResult.user;
+      } else {
+        userData = {
+          email,
+          type: 'client',
+          createdAt: new Date().toISOString()
+        };
+        const saveResult = await databaseService.create('users', userData);
+        if (!saveResult.success) {
+          Alert.alert('Erro', 'Falha ao criar usuário');
+          return;
+        }
+        userData.id = saveResult.id;
+      }
+      
+      Alert.alert('Sucesso', 'Login realizado!', [
+        { text: 'OK', onPress: () => onLogin(userData) }
+      ]);
+    } else {
+      Alert.alert('Erro', 'Falha no login');
+    }
   };
 
-  return React.createElement(
-    ScrollView,
-    {
-      contentContainerStyle: styles.container
-    },
-    [
-      React.createElement(
-        View,
-        {
-          key: 'header',
-          style: styles.header
-        },
-        [
-          React.createElement(Ionicons, {
-            key: 'icon',
-            name: 'cut',
-            size: 80,
-            color: '#007AFF'
-          }),
-          React.createElement(Text, {
-            key: 'title',
-            style: styles.title
-          }, 'App Barber'),
-          React.createElement(Text, {
-            key: 'subtitle',
-            style: styles.subtitle
-          }, 'Sistema de Gestão')
-        ]
-      ),
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Ionicons name="cut" size={80} color="#007AFF" />
+        <Text style={styles.title}>App Barber</Text>
+        <Text style={styles.subtitle}>Sistema de Gestão</Text>
+      </View>
 
-      React.createElement(
-        View,
-        {
-          key: 'form',
-          style: styles.form
-        },
-        [
-          React.createElement(Text, {
-            key: 'label',
-            style: styles.label
-          }, 'Número de Telefone'),
-          React.createElement(TextInput, {
-            key: 'input',
-            style: styles.input,
-            placeholder: '(11) 99999-9999',
-            value: phoneNumber,
-            onChangeText: (text) => setPhoneNumber(formatPhone(text)),
-            keyboardType: 'phone-pad'
-          }),
-          React.createElement(TouchableOpacity, {
-            key: 'button',
-            style: styles.button,
-            onPress: handleLogin
-          },
-            React.createElement(Text, {
-              style: styles.buttonText
-            }, 'Entrar no Sistema')
-          )
-        ]
-      ),
+      <View style={styles.form}>
+        {step === 1 ? (
+          <>
+            <Text style={styles.label}>Email de Acesso</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="seu@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TouchableOpacity 
+              style={[styles.button, loading && styles.buttonDisabled]} 
+              onPress={handleSendCode}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Enviando...' : 'Enviar Código'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>Código de Verificação</Text>
+            <Text style={styles.subLabel}>Enviamos para {email}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="000000"
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <TouchableOpacity style={styles.button} onPress={handleVerifyCode}>
+              <Text style={styles.buttonText}>Verificar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep(1)}>
+              <Text style={styles.secondaryButtonText}>Voltar</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
 
-      React.createElement(
-        TouchableOpacity,
-        {
-          key: 'devButton',
-          style: styles.devButton,
-          onPress: onLogin
-        },
-        React.createElement(Text, {
-          style: styles.devButtonText
-        }, 'Entrar como Desenvolvedor')
-      )
-    ]
+      <TouchableOpacity style={styles.devButton} onPress={() => onLogin({ id: 'dev', email: 'dev@barber.com', type: 'admin' })}>
+        <Text style={styles.devButtonText}>Entrar como Desenvolvedor</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
@@ -140,22 +162,45 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#333'
   },
+  subLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center'
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    marginBottom: 20
+    marginBottom: 20,
+    textAlign: 'center'
   },
   button: {
     backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc'
   },
   buttonText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  secondaryButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#007AFF'
+  },
+  secondaryButtonText: {
+    color: '#007AFF',
     fontSize: 16,
     fontWeight: '600'
   },

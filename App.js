@@ -1,30 +1,30 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Importar telas
+// Telas otimizadas
+import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import AgendamentosScreen from './src/screens/AgendamentosScreen';
 import ServicosScreen from './src/screens/ServicosScreen';
-import VendasScreen from './src/screens/VendasScreen';
 import FuncionariosScreen from './src/screens/FuncionariosScreen';
 import RelatoriosScreen from './src/screens/RelatoriosScreen';
 
-// Sistema de navegação
 const SCREENS = {
+  LOGIN: 'LOGIN',
   DASHBOARD: 'DASHBOARD',
   AGENDAMENTOS: 'AGENDAMENTOS',
   SERVICOS: 'SERVICOS',
-  VENDAS: 'VENDAS',
   FUNCIONARIOS: 'FUNCIONARIOS',
   RELATORIOS: 'RELATORIOS'
 };
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = React.useState(SCREENS.DASHBOARD);
-  const [darkMode, setDarkMode] = React.useState(true);
+  const [currentScreen, setCurrentScreen] = useState(SCREENS.LOGIN);
+  const [darkMode, setDarkMode] = useState(true);
+  const [user, setUser] = useState(null);
 
-  const theme = {
+  const theme = useMemo(() => ({
     dark: darkMode,
     colors: {
       background: darkMode ? '#0f0f0f' : '#f8f9fa',
@@ -37,165 +37,97 @@ export default function App() {
       danger: '#FF3B30',
       border: darkMode ? '#333333' : '#e0e0e0'
     }
+  }), [darkMode]);
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setCurrentScreen(SCREENS.DASHBOARD);
   };
 
-  const styles = createStyles(theme);
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentScreen(SCREENS.LOGIN);
+  };
 
   const renderScreen = () => {
-    const screenProps = {
-      theme: theme,
-      styles: styles
-    };
-
+    const screenProps = { theme, styles, user, onNavigate: setCurrentScreen };
+    
     switch (currentScreen) {
+      case SCREENS.LOGIN:
+        return <LoginScreen onLogin={handleLogin} />;
       case SCREENS.DASHBOARD:
-        return React.createElement(DashboardScreen, {
-          ...screenProps,
-          onNavigate: setCurrentScreen
-        });
+        return <DashboardScreen {...screenProps} />;
       case SCREENS.AGENDAMENTOS:
-        return React.createElement(AgendamentosScreen, screenProps);
+        return <AgendamentosScreen {...screenProps} />;
       case SCREENS.SERVICOS:
-        return React.createElement(ServicosScreen, screenProps);
-      case SCREENS.VENDAS:
-        return React.createElement(VendasScreen, screenProps);
+        return <ServicosScreen {...screenProps} />;
       case SCREENS.FUNCIONARIOS:
-        return React.createElement(FuncionariosScreen, screenProps);
+        return <FuncionariosScreen {...screenProps} />;
       case SCREENS.RELATORIOS:
-        return React.createElement(RelatoriosScreen, screenProps);
+        return <RelatoriosScreen {...screenProps} />;
       default:
-        return React.createElement(DashboardScreen, screenProps);
+        return <DashboardScreen {...screenProps} />;
     }
   };
 
-  const isActive = (screen) => currentScreen === screen;
+  if (currentScreen === SCREENS.LOGIN) {
+    return renderScreen();
+  }
 
-  return React.createElement(View, { style: styles.container }, [
-    React.createElement(StatusBar, {
-      key: 'statusbar',
-      barStyle: darkMode ? 'light-content' : 'dark-content',
-      backgroundColor: theme.colors.background
-    }),
-    
-    // Header
-    React.createElement(View, {
-      key: 'header',
-      style: styles.header
-    }, [
-      React.createElement(Text, {
-        key: 'title',
-        style: styles.headerTitle
-      }, 'App Barber'),
-      React.createElement(TouchableOpacity, {
-        key: 'themeToggle',
-        style: styles.themeButton,
-        onPress: () => setDarkMode(!darkMode)
-      },
-        React.createElement(Ionicons, {
-          name: darkMode ? 'sunny' : 'moon',
-          size: 24,
-          color: theme.colors.primary
-        })
-      )
-    ]),
+  const TabButton = ({ screen, icon, label }) => {
+  const isActive = currentScreen === screen;
+  return (
+    <TouchableOpacity 
+      style={styles.tab} 
+      onPress={() => setCurrentScreen(screen)}
+    >
+      <Ionicons 
+        name={isActive ? icon : `${icon}-outline`} 
+        size={22} 
+        color={isActive ? theme.colors.primary : theme.colors.textSecondary} 
+      />
+      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
-    // Conteúdo principal
-    React.createElement(View, {
-      key: 'content',
-      style: styles.content
-    }, renderScreen()),
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>App Barber</Text>
+        <View style={styles.headerActions}>
+          <Text style={styles.userInfo}>{user?.email || 'Usuário'}</Text>
+          <TouchableOpacity style={styles.themeButton} onPress={() => setDarkMode(!darkMode)}>
+            <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-    // Barra de navegação inferior
-    React.createElement(View, {
-      key: 'tabbar',
-      style: styles.tabBar
-    }, [
-      React.createElement(TouchableOpacity, {
-        key: 'tab1',
-        style: [styles.tab, isActive(SCREENS.DASHBOARD) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.DASHBOARD)
-      }, [
-        React.createElement(Ionicons, {
-          key: 'icon1',
-          name: isActive(SCREENS.DASHBOARD) ? 'home' : 'home-outline',
-          size: 22,
-          color: isActive(SCREENS.DASHBOARD) ? theme.colors.primary : theme.colors.textSecondary
-        }),
-        React.createElement(Text, {
-          key: 'text1',
-          style: [styles.tabText, isActive(SCREENS.DASHBOARD) && styles.tabTextActive]
-        }, 'Home')
-      ]),
+      {/* Conteúdo */}
+      <View style={styles.content}>
+        {renderScreen()}
+      </View>
 
-      React.createElement(TouchableOpacity, {
-        key: 'tab2',
-        style: [styles.tab, isActive(SCREENS.AGENDAMENTOS) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.AGENDAMENTOS)
-      }, [
-        React.createElement(Ionicons, {
-          key: 'icon2',
-          name: isActive(SCREENS.AGENDAMENTOS) ? 'calendar' : 'calendar-outline',
-          size: 22,
-          color: isActive(SCREENS.AGENDAMENTOS) ? theme.colors.primary : theme.colors.textSecondary
-        }),
-        React.createElement(Text, {
-          key: 'text2',
-          style: [styles.tabText, isActive(SCREENS.AGENDAMENTOS) && styles.tabTextActive]
-        }, 'Agenda')
-      ]),
-
-      React.createElement(TouchableOpacity, {
-        key: 'tab3',
-        style: [styles.tab, isActive(SCREENS.SERVICOS) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.SERVICOS)
-      }, [
-        React.createElement(Ionicons, {
-          key: 'icon3',
-          name: isActive(SCREENS.SERVICOS) ? 'cut' : 'cut-outline',
-          size: 22,
-          color: isActive(SCREENS.SERVICOS) ? theme.colors.primary : theme.colors.textSecondary
-        }),
-        React.createElement(Text, {
-          key: 'text3',
-          style: [styles.tabText, isActive(SCREENS.SERVICOS) && styles.tabTextActive]
-        }, 'Serviços')
-      ]),
-
-      React.createElement(TouchableOpacity, {
-        key: 'tab4',
-        style: [styles.tab, isActive(SCREENS.FUNCIONARIOS) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.FUNCIONARIOS)
-      }, [
-        React.createElement(Ionicons, {
-          key: 'icon4',
-          name: isActive(SCREENS.FUNCIONARIOS) ? 'people' : 'people-outline',
-          size: 22,
-          color: isActive(SCREENS.FUNCIONARIOS) ? theme.colors.primary : theme.colors.textSecondary
-        }),
-        React.createElement(Text, {
-          key: 'text4',
-          style: [styles.tabText, isActive(SCREENS.FUNCIONARIOS) && styles.tabTextActive]
-        }, 'Equipe')
-      ]),
-
-      React.createElement(TouchableOpacity, {
-        key: 'tab5',
-        style: [styles.tab, isActive(SCREENS.RELATORIOS) && styles.tabActive],
-        onPress: () => setCurrentScreen(SCREENS.RELATORIOS)
-      }, [
-        React.createElement(Ionicons, {
-          key: 'icon5',
-          name: isActive(SCREENS.RELATORIOS) ? 'stats-chart' : 'stats-chart-outline',
-          size: 22,
-          color: isActive(SCREENS.RELATORIOS) ? theme.colors.primary : theme.colors.textSecondary
-        }),
-        React.createElement(Text, {
-          key: 'text5',
-          style: [styles.tabText, isActive(SCREENS.RELATORIOS) && styles.tabTextActive]
-        }, 'Relatórios')
-      ])
-    ])
-  ]);
+      {/* Navegação */}
+      <View style={styles.tabBar}>
+        <TabButton screen={SCREENS.DASHBOARD} icon="home" label="Home" />
+        <TabButton screen={SCREENS.AGENDAMENTOS} icon="calendar" label="Agenda" />
+        <TabButton screen={SCREENS.SERVICOS} icon="cut" label="Serviços" />
+        <TabButton screen={SCREENS.FUNCIONARIOS} icon="people" label="Equipe" />
+        <TabButton screen={SCREENS.RELATORIOS} icon="stats-chart" label="Relatórios" />
+      </View>
+    </View>
+  );
 }
 
 const createStyles = (theme) => StyleSheet.create({
@@ -218,9 +150,24 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.text
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  userInfo: {
+    fontSize: 12,
+    color: theme.colors.textSecondary
+  },
   themeButton: {
     padding: 8,
     borderRadius: 20
+  },
+  logoutButton: {
+    padding: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.danger
   },
   content: {
     flex: 1
@@ -237,9 +184,6 @@ const createStyles = (theme) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 8
-  },
-  tabActive: {
-    // Estilo para aba ativa
   },
   tabText: {
     fontSize: 12,
