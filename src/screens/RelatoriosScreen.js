@@ -5,7 +5,7 @@ import { databaseService } from '../../services/databaseService';
 
 const { width } = Dimensions.get('window');
 
-export default function RelatoriosScreen({ theme, styles }) {
+export default function RelatoriosScreen({ theme, styles, user }) { // ← user adicionado
   const [periodo, setPeriodo] = useState('semana');
   const [relatorioData, setRelatorioData] = useState({ 
     vendas: [], 
@@ -16,17 +16,19 @@ export default function RelatoriosScreen({ theme, styles }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { 
-    loadRelatorioData(); 
-  }, [periodo]);
+    if (user?.id) {
+      loadRelatorioData(); 
+    }
+  }, [periodo, user]); // ← adicionar user como dependência
 
   const loadRelatorioData = async () => {
     setLoading(true);
     
     try {
       const [agendamentosResult, servicosResult, funcionariosResult] = await Promise.all([
-        databaseService.read('agendamentos'),
-        databaseService.read('servicos'),
-        databaseService.read('funcionarios')
+        databaseService.read('agendamentos', user.id), // ← user.id
+        databaseService.read('servicos', user.id), // ← user.id
+        databaseService.read('funcionarios', user.id) // ← user.id
       ]);
 
       if (agendamentosResult.success && servicosResult.success && funcionariosResult.success) {

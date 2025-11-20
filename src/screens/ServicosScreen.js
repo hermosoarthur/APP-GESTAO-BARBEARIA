@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, S
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
-export default function ServicosScreen({ theme, styles }) {
+export default function ServicosScreen({ theme, styles, user }) { // ← user adicionado
   const [servicos, setServicos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingServico, setEditingServico] = useState(null);
@@ -18,11 +18,13 @@ export default function ServicosScreen({ theme, styles }) {
   const [errors, setErrors] = useState({});
 
   useEffect(() => { 
-    loadServicos(); 
-  }, []);
+    if (user?.id) {
+      loadServicos(); 
+    }
+  }, [user]); // ← adicionar user como dependência
 
   const loadServicos = async () => {
-    const result = await databaseService.read('servicos');
+    const result = await databaseService.read('servicos', user.id); // ← user.id
     if (result.success) setServicos(result.data);
   };
 
@@ -62,8 +64,8 @@ export default function ServicosScreen({ theme, styles }) {
     };
 
     const result = editingServico 
-      ? await databaseService.update('servicos', editingServico.id, servicoData)
-      : await databaseService.create('servicos', servicoData);
+      ? await databaseService.update('servicos', editingServico.id, servicoData, user.id) // ← user.id
+      : await databaseService.create('servicos', servicoData, user.id); // ← user.id
 
     if (result.success) {
       await loadServicos();
@@ -81,7 +83,7 @@ export default function ServicosScreen({ theme, styles }) {
       { 
         text: 'Excluir', 
         onPress: async () => {
-          const result = await databaseService.delete('servicos', id);
+          const result = await databaseService.delete('servicos', id, user.id); // ← user.id
           if (result.success) {
             await loadServicos();
             Alert.alert('Sucesso', 'Serviço excluído!');

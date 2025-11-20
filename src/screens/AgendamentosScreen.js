@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  FlatList, 
-  StyleSheet, 
-  Alert, 
-  TextInput, 
-  ScrollView, 
-  Platform,
-  Modal,
-  Linking,
-  StatusBar,
-  SafeAreaView
+  View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, ScrollView, Platform,
+  Modal, Linking, StatusBar, SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
@@ -359,7 +348,7 @@ const createScreenStyles = (theme) => StyleSheet.create({
   }
 });
 
-export default function AgendamentosScreen({ theme, styles }) {
+export default function AgendamentosScreen({ theme, styles, user }) {
   const [agendamentos, setAgendamentos] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
@@ -473,23 +462,25 @@ export default function AgendamentosScreen({ theme, styles }) {
   };
 
   useEffect(() => { 
-    loadAgendamentos();
-    loadServicos();
-    loadFuncionarios();
-  }, []);
+    if (user?.id) {
+      loadAgendamentos();
+      loadServicos();
+      loadFuncionarios();
+    }
+  }, [user]);
 
   const loadAgendamentos = async () => {
-    const result = await databaseService.read('agendamentos');
+    const result = await databaseService.read('agendamentos', user.id);
     if (result.success) setAgendamentos(result.data);
   };
 
   const loadServicos = async () => {
-    const result = await databaseService.read('servicos');
+    const result = await databaseService.read('servicos', user.id);
     if (result.success) setServicos(result.data);
   };
 
   const loadFuncionarios = async () => {
-    const result = await databaseService.read('funcionarios');
+    const result = await databaseService.read('funcionarios', user.id);
     if (result.success) {
       const funcionariosAtivos = result.data.filter(f => f.status === 'ativo');
       setFuncionarios(funcionariosAtivos);
@@ -546,8 +537,8 @@ export default function AgendamentosScreen({ theme, styles }) {
     }
 
     const result = editingAgendamento 
-      ? await databaseService.update('agendamentos', editingAgendamento.id, formData)
-      : await databaseService.create('agendamentos', formData);
+      ? await databaseService.update('agendamentos', editingAgendamento.id, formData, user.id)
+      : await databaseService.create('agendamentos', formData, user.id);
 
     if (result.success) {
       if (!editingAgendamento) {
@@ -599,7 +590,7 @@ export default function AgendamentosScreen({ theme, styles }) {
             text: 'Cancelar Agendamento', 
             style: 'destructive',
             onPress: async () => {
-              const result = await databaseService.delete('agendamentos', agendamento.id);
+              const result = await databaseService.delete('agendamentos', agendamento.id, user.id);
               if (result.success) {
                 await loadAgendamentos();
                 Alert.alert('Sucesso', 'Agendamento cancelado e removido!');
@@ -622,11 +613,11 @@ export default function AgendamentosScreen({ theme, styles }) {
           tipo: 'servico'
         };
 
-        const vendaResult = await databaseService.create('vendas', vendaData);
+        const vendaResult = await databaseService.create('vendas', vendaData, user.id);
         if (vendaResult.success) {
           const updateResult = await databaseService.update('agendamentos', agendamento.id, { 
             status: 'concluido' 
-          });
+          }, user.id);
           
           if (updateResult.success) {
             await loadAgendamentos();
@@ -637,7 +628,7 @@ export default function AgendamentosScreen({ theme, styles }) {
     } else {
       const result = await databaseService.update('agendamentos', agendamento.id, { 
         status: novoStatus 
-      });
+      }, user.id);
       
       if (result.success) {
         await loadAgendamentos();

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, S
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
-export default function FuncionariosScreen({ theme, styles, user }) {
+export default function FuncionariosScreen({ theme, styles, user }) { // ← user adicionado
   const [funcionarios, setFuncionarios] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingFuncionario, setEditingFuncionario] = useState(null);
@@ -20,16 +20,18 @@ export default function FuncionariosScreen({ theme, styles, user }) {
   const [errors, setErrors] = useState({});
 
   // PERMITIR TODOS OS USUÁRIOS ADMINISTRAR FUNCIONÁRIOS
-  const canEdit = true; // Remover restrição
+  const canEdit = true;
 
   const funcoes = ['Barbeiro', 'Barbeira', 'Recepcionista', 'Gerente', 'Auxiliar'];
 
   useEffect(() => { 
-    loadFuncionarios(); 
-  }, []);
+    if (user?.id) {
+      loadFuncionarios(); 
+    }
+  }, [user]); // ← adicionar user como dependência
 
   const loadFuncionarios = async () => {
-    const result = await databaseService.read('funcionarios');
+    const result = await databaseService.read('funcionarios', user.id); // ← user.id
     if (result.success) setFuncionarios(result.data);
   };
 
@@ -63,8 +65,8 @@ export default function FuncionariosScreen({ theme, styles, user }) {
     }
 
     const result = editingFuncionario 
-      ? await databaseService.update('funcionarios', editingFuncionario.id, formData)
-      : await databaseService.create('funcionarios', formData);
+      ? await databaseService.update('funcionarios', editingFuncionario.id, formData, user.id) // ← user.id
+      : await databaseService.create('funcionarios', formData, user.id); // ← user.id
 
     if (result.success) {
       await loadFuncionarios();
@@ -82,7 +84,7 @@ export default function FuncionariosScreen({ theme, styles, user }) {
       { 
         text: 'Excluir', 
         onPress: async () => {
-          const result = await databaseService.delete('funcionarios', id);
+          const result = await databaseService.delete('funcionarios', id, user.id); // ← user.id
           if (result.success) {
             await loadFuncionarios();
             Alert.alert('Sucesso', 'Funcionário excluído!');
@@ -96,7 +98,7 @@ export default function FuncionariosScreen({ theme, styles, user }) {
     const funcionario = funcionarios.find(f => f.id === id);
     const novoStatus = funcionario.status === 'ativo' ? 'inativo' : 'ativo';
     
-    const result = await databaseService.update('funcionarios', id, { status: novoStatus });
+    const result = await databaseService.update('funcionarios', id, { status: novoStatus }, user.id); // ← user.id
     if (result.success) {
       await loadFuncionarios();
       Alert.alert('Sucesso', `Status alterado para ${novoStatus}`);

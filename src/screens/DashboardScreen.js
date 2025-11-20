@@ -12,26 +12,28 @@ export default function DashboardScreen({ theme, styles, onNavigate, user }) {
   });
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (user?.id) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   const loadDashboardData = async () => {
-  const hoje = new Date().toISOString().split('T')[0];
-  
-  const [agendamentosResult, servicosResult] = await Promise.all([
-    databaseService.getAgendamentosByDate(hoje),
-    databaseService.read('servicos')
-  ]);
-
-  if (agendamentosResult.success && servicosResult.success) {
-    const agendamentosHoje = agendamentosResult.data.length;
-    const agendamentosConcluidos = agendamentosResult.data.filter(ag => ag.status === 'concluido');
+    const hoje = new Date().toISOString().split('T')[0];
     
-    const totalVendas = agendamentosConcluidos.reduce((sum, ag) => {
-      const servico = servicosResult.data.find(s => s.nome === ag.servico);
-      return sum + (servico?.preco || 0);
-    }, 0);
+    const [agendamentosResult, servicosResult] = await Promise.all([
+      databaseService.getAgendamentosByDate(hoje, user.id), // ← user.id adicionado
+      databaseService.read('servicos', user.id) // ← user.id adicionado
+    ]);
+
+    if (agendamentosResult.success && servicosResult.success) {
+      const agendamentosHoje = agendamentosResult.data.length;
+      const agendamentosConcluidos = agendamentosResult.data.filter(ag => ag.status === 'concluido');
       
+      const totalVendas = agendamentosConcluidos.reduce((sum, ag) => {
+        const servico = servicosResult.data.find(s => s.nome === ag.servico);
+        return sum + (servico?.preco || 0);
+      }, 0);
+        
       // Encontrar serviço mais realizado
       const servicoCount = {};
       agendamentosResult.data.forEach(ag => {
