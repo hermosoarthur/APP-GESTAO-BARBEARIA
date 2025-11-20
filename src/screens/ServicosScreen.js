@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, ScrollView, Modal } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
 export default function ServicosScreen({ theme, styles, user }) { // ← user adicionado
+  const insets = useSafeAreaInsets();
   const [servicos, setServicos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingServico, setEditingServico] = useState(null);
@@ -156,7 +158,7 @@ export default function ServicosScreen({ theme, styles, user }) { // ← user ad
   const screenStyles = createScreenStyles(theme);
 
   return (
-    <View style={styles.content}>
+    <SafeAreaView style={[styles.content, { paddingBottom: insets.bottom }]}> 
       <View style={screenStyles.header}>
         <Text style={screenStyles.title}>Serviços</Text>
         <TouchableOpacity 
@@ -172,7 +174,7 @@ export default function ServicosScreen({ theme, styles, user }) { // ← user ad
         renderItem={renderServico} 
         keyExtractor={item => item.id} 
         style={screenStyles.list} 
-        contentContainerStyle={screenStyles.listContent}
+        contentContainerStyle={[screenStyles.listContent, { paddingBottom: insets.bottom + 16 }]}
         ListEmptyComponent={
           <View style={screenStyles.emptyState}>
             <Ionicons name="cut-outline" size={48} color={theme.colors.textSecondary} />
@@ -188,7 +190,7 @@ export default function ServicosScreen({ theme, styles, user }) { // ← user ad
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={screenStyles.modalContainer}>
           <View style={screenStyles.modalContent}>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
               <Text style={screenStyles.modalTitle}>
                 {editingServico ? 'Editar Serviço' : 'Novo Serviço'}
               </Text>
@@ -287,7 +289,7 @@ export default function ServicosScreen({ theme, styles, user }) { // ← user ad
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

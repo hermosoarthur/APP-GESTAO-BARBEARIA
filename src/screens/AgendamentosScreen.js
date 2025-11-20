@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, ScrollView, Platform,
-  Modal, Linking, StatusBar, SafeAreaView
+  Modal, Linking, StatusBar
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -263,7 +264,7 @@ const createScreenStyles = (theme) => StyleSheet.create({
   // DateTimePicker Styles
   dateTimeContainer: {
     marginBottom: 10,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 10
   },
@@ -276,6 +277,13 @@ const createScreenStyles = (theme) => StyleSheet.create({
   dateTimeButton: {
     padding: 10,
     backgroundColor: theme.colors.primary,
+    borderRadius: 5,
+    minWidth: 80,
+    alignItems: 'center'
+  },
+  dateTimeCancelButton: {
+    padding: 10,
+    backgroundColor: theme.dark ? '#444' : '#666',
     borderRadius: 5,
     minWidth: 80,
     alignItems: 'center'
@@ -349,6 +357,7 @@ const createScreenStyles = (theme) => StyleSheet.create({
 });
 
 export default function AgendamentosScreen({ theme, styles, user }) {
+  const insets = useSafeAreaInsets();
   const [agendamentos, setAgendamentos] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
@@ -728,7 +737,7 @@ export default function AgendamentosScreen({ theme, styles, user }) {
 
   // Usando SafeAreaView para evitar sobreposição
   return React.createElement(SafeAreaView, { 
-    style: screenStyles.safeArea 
+    style: [screenStyles.safeArea, { paddingBottom: insets.bottom }]
   },
     React.createElement(StatusBar, {
       backgroundColor: theme.colors.card,
@@ -762,13 +771,13 @@ export default function AgendamentosScreen({ theme, styles, user }) {
         })
       ),
 
-      React.createElement(FlatList, {
-        data: agendamentosFiltrados,
-        renderItem: renderAgendamento,
-        keyExtractor: item => item.id,
-        style: screenStyles.list,
-        contentContainerStyle: screenStyles.listContent,
-        ListEmptyComponent: React.createElement(View, { style: screenStyles.emptyState },
+  React.createElement(FlatList, {
+  data: agendamentosFiltrados,
+  renderItem: renderAgendamento,
+  keyExtractor: item => item.id,
+  style: screenStyles.list,
+  contentContainerStyle: [screenStyles.listContent, { paddingBottom: 30 + insets.bottom }],
+  ListEmptyComponent: React.createElement(View, { style: screenStyles.emptyState },
           React.createElement(Ionicons, { name: "calendar-outline", size: 48, color: theme.colors.textSecondary }),
           React.createElement(Text, { style: screenStyles.emptyText }, "Nenhum agendamento encontrado"),
           React.createElement(Text, { style: screenStyles.emptySubtext },
@@ -778,12 +787,12 @@ export default function AgendamentosScreen({ theme, styles, user }) {
       }),
 
       // Modal de Agendamento
-      React.createElement(Modal, {
+        React.createElement(Modal, {
         visible: modalVisible,
         animationType: "slide",
         transparent: true
       },
-        React.createElement(SafeAreaView, { style: screenStyles.safeArea },
+        React.createElement(SafeAreaView, { style: [screenStyles.safeArea, { paddingBottom: insets.bottom }] },
           React.createElement(View, { style: screenStyles.modalOverlay },
             React.createElement(View, { style: screenStyles.modalContainer },
               React.createElement(View, { style: screenStyles.modalContent },
@@ -913,11 +922,12 @@ export default function AgendamentosScreen({ theme, styles, user }) {
                       display: "spinner",
                       onChange: onDateChange,
                       minimumDate: new Date(),
-                      style: { height: 120 }
+                      textColor: theme.colors.text,
+                      style: { height: 120, backgroundColor: theme.colors.card }
                     }),
                     Platform.OS === 'ios' && React.createElement(View, { style: screenStyles.dateTimeButtons },
                       React.createElement(TouchableOpacity, {
-                        style: [screenStyles.dateTimeButton, { backgroundColor: '#666' }],
+                        style: [screenStyles.dateTimeButton, screenStyles.dateTimeCancelButton],
                         onPress: cancelDate
                       },
                         React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Cancelar")
@@ -939,11 +949,12 @@ export default function AgendamentosScreen({ theme, styles, user }) {
                       display: "spinner",
                       onChange: onTimeChange,
                       minuteInterval: 30,
-                      style: { height: 120 }
+                      textColor: theme.colors.text,
+                      style: { height: 120, backgroundColor: theme.colors.card }
                     }),
                     Platform.OS === 'ios' && React.createElement(View, { style: screenStyles.dateTimeButtons },
                       React.createElement(TouchableOpacity, {
-                        style: [screenStyles.dateTimeButton, { backgroundColor: '#666' }],
+                        style: [screenStyles.dateTimeButton, screenStyles.dateTimeCancelButton],
                         onPress: cancelTime
                       },
                         React.createElement(Text, { style: screenStyles.dateTimeButtonText }, "Cancelar")
@@ -986,7 +997,7 @@ export default function AgendamentosScreen({ theme, styles, user }) {
         transparent: true,
         animationType: "fade"
       },
-        React.createElement(SafeAreaView, { style: screenStyles.safeArea },
+        React.createElement(SafeAreaView, { style: [screenStyles.safeArea, { paddingBottom: insets.bottom }] },
           React.createElement(View, { style: screenStyles.statusModalOverlay },
             React.createElement(View, { style: screenStyles.statusModalContainer },
               React.createElement(Text, { style: screenStyles.statusModalTitle }, "Alterar Status"),

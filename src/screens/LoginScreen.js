@@ -258,11 +258,13 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
 import { databaseService } from '../../services/databaseService';
 
 export default function LoginScreen({ onLogin }) {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentCode, setSentCode] = useState('');
@@ -404,7 +406,7 @@ export default function LoginScreen({ onLogin }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.header}>
         <Ionicons name="cut" size={80} color="#007AFF" />
         <Text style={styles.title}>App Barber</Text>

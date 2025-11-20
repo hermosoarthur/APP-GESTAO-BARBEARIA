@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, TextInput, ScrollView, Modal} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
 export default function FuncionariosScreen({ theme, styles, user }) { // ← user adicionado
+  const insets = useSafeAreaInsets();
   const [funcionarios, setFuncionarios] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingFuncionario, setEditingFuncionario] = useState(null);
@@ -184,7 +186,7 @@ export default function FuncionariosScreen({ theme, styles, user }) { // ← use
   const screenStyles = createScreenStyles(theme);
 
   return (
-    <View style={styles.content}>
+    <SafeAreaView style={[styles.content, { paddingBottom: insets.bottom }]}>
       <View style={screenStyles.header}>
         <View>
           <Text style={screenStyles.title}>Equipe</Text>
@@ -205,7 +207,7 @@ export default function FuncionariosScreen({ theme, styles, user }) { // ← use
         renderItem={renderFuncionario} 
         keyExtractor={item => item.id} 
         style={screenStyles.list} 
-        contentContainerStyle={screenStyles.listContent}
+        contentContainerStyle={[screenStyles.listContent, { paddingBottom: insets.bottom + 16 }]}
         ListEmptyComponent={
           <View style={screenStyles.emptyState}>
             <Ionicons name="people-outline" size={48} color={theme.colors.textSecondary} />
@@ -221,7 +223,7 @@ export default function FuncionariosScreen({ theme, styles, user }) { // ← use
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={screenStyles.modalContainer}>
           <View style={screenStyles.modalContent}>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
               <Text style={screenStyles.modalTitle}>
                 {editingFuncionario ? 'Editar Funcionário' : 'Novo Funcionário'}
               </Text>
@@ -336,7 +338,7 @@ export default function FuncionariosScreen({ theme, styles, user }) { // ← use
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
