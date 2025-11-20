@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
 import { databaseService } from '../../services/databaseService';
@@ -10,6 +10,7 @@ export default function LoginScreen({ onLogin }) {
   const [sentCode, setSentCode] = useState('');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const handleSendCode = async () => {
     if (!email || !email.includes('@')) {
@@ -31,36 +32,79 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleVerifyCode = async () => {
+    if (!code) {
+      Alert.alert('Erro', 'Digite o código de verificação');
+      return;
+    }
+
+    // Valida o código
     if (!authService.validateCode(code, sentCode)) {
       Alert.alert('Erro', 'Código inválido');
       return;
     }
 
-    const userResult = await databaseService.getUserByEmail(email);
-    let userData;
+    setVerifying(true);
 
-    if (userResult.success) {
-      if (userResult.user) {
-        userData = userResult.user;
-      } else {
-        userData = {
-          email,
-          type: 'client',
-          createdAt: new Date().toISOString()
-        };
-        const saveResult = await databaseService.create('users', userData);
-        if (!saveResult.success) {
-          Alert.alert('Erro', 'Falha ao criar usuário');
-          return;
-        }
-        userData.id = saveResult.id;
-      }
+    try {
+      console.log('🔐 Iniciando processo de login...');
       
-      Alert.alert('Sucesso', 'Login realizado!', [
-        { text: 'OK', onPress: () => onLogin(userData) }
-      ]);
-    } else {
-      Alert.alert('Erro', 'Falha no login');
+      // TESTE: Primeiro vamos testar se o Firebase está funcionando
+      console.log('🧪 Testando conexão com Firebase...');
+      const testResult = await databaseService.read('test');
+      console.log('📊 Teste Firebase:', testResult);
+
+      // Busca usuário existente
+      console.log('👤 Buscando usuário...');
+      const userResult = await databaseService.getUserByEmail(email);
+      console.log('📊 Resultado da busca de usuário:', userResult);
+
+      let userData;
+
+      if (userResult.success) {
+        if (userResult.user) {
+          // Usuário existe
+          userData = userResult.user;
+          console.log('✅ Usuário encontrado:', userData);
+        } else {
+          // Cria novo usuário
+          console.log('👤 Criando novo usuário...');
+          userData = {
+            email: email.toLowerCase().trim(),
+            type: 'client',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          };
+          
+          console.log('📝 Dados do usuário para criar:', userData);
+          const saveResult = await databaseService.create('users', userData);
+          console.log('📝 Resultado da criação:', saveResult);
+          
+          if (saveResult.success) {
+            userData.id = saveResult.id;
+            console.log('✅ Novo usuário criado:', userData);
+          } else {
+            Alert.alert('Erro do Firebase', 'Falha ao criar usuário: ' + (saveResult.error || 'Erro desconhecido'));
+            setVerifying(false);
+            return;
+          }
+        }
+        
+        // Login bem-sucedido
+        console.log('🎉 Login realizado com sucesso!');
+        setTimeout(() => {
+          setVerifying(false);
+          onLogin(userData);
+        }, 500);
+        
+      } else {
+        Alert.alert('Erro do Firebase', 'Falha na comunicação com o banco de dados: ' + (userResult.error || 'Erro desconhecido'));
+        setVerifying(false);
+      }
+
+    } catch (error) {
+      console.error('💥 Erro no processo de login:', error);
+      Alert.alert('Erro', 'Erro inesperado: ' + error.message);
+      setVerifying(false);
     }
   };
 
@@ -89,9 +133,11 @@ export default function LoginScreen({ onLogin }) {
               onPress={handleSendCode}
               disabled={loading}
             >
-              <Text style={styles.buttonText}>
-                {loading ? 'Enviando...' : 'Enviar Código'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Enviar Código</Text>
+              )}
             </TouchableOpacity>
           </>
         ) : (
@@ -106,8 +152,16 @@ export default function LoginScreen({ onLogin }) {
               keyboardType="number-pad"
               maxLength={6}
             />
-            <TouchableOpacity style={styles.button} onPress={handleVerifyCode}>
-              <Text style={styles.buttonText}>Verificar</Text>
+            <TouchableOpacity 
+              style={[styles.button, verifying && styles.buttonDisabled]} 
+              onPress={handleVerifyCode}
+              disabled={verifying}
+            >
+              {verifying ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Verificar</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep(1)}>
               <Text style={styles.secondaryButtonText}>Voltar</Text>
@@ -115,10 +169,6 @@ export default function LoginScreen({ onLogin }) {
           </>
         )}
       </View>
-
-      <TouchableOpacity style={styles.devButton} onPress={() => onLogin({ id: 'dev', email: 'dev@barber.com', type: 'admin' })}>
-        <Text style={styles.devButtonText}>Entrar como Desenvolvedor</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -201,17 +251,6 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600'
-  },
-  devButton: {
-    backgroundColor: '#34C759',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  devButtonText: {
-    color: 'white',
     fontSize: 16,
     fontWeight: '600'
   }

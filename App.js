@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context'; // IMPORT CORRETO
 import { Ionicons } from '@expo/vector-icons';
 
 // Telas otimizadas
@@ -77,56 +78,58 @@ export default function App() {
   }
 
   const TabButton = ({ screen, icon, label }) => {
-  const isActive = currentScreen === screen;
-  return (
-    <TouchableOpacity 
-      style={styles.tab} 
-      onPress={() => setCurrentScreen(screen)}
-    >
-      <Ionicons 
-        name={isActive ? icon : `${icon}-outline`} 
-        size={22} 
-        color={isActive ? theme.colors.primary : theme.colors.textSecondary} 
-      />
-      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+    const isActive = currentScreen === screen;
+    return (
+      <TouchableOpacity 
+        style={styles.tab} 
+        onPress={() => setCurrentScreen(screen)}
+      >
+        <Ionicons 
+          name={isActive ? icon : `${icon}-outline`} 
+          size={22} 
+          color={isActive ? theme.colors.primary : theme.colors.textSecondary} 
+        />
+        <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>App Barber</Text>
-        <View style={styles.headerActions}>
-          <Text style={styles.userInfo}>{user?.email || 'Usuário'}</Text>
-          <TouchableOpacity style={styles.themeButton} onPress={() => setDarkMode(!darkMode)}>
-            <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={theme.colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
-          </TouchableOpacity>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>App Barber</Text>
+          <View style={styles.headerActions}>
+            <Text style={styles.userInfo}>{user?.email || 'Usuário'}</Text>
+            <TouchableOpacity style={styles.themeButton} onPress={() => setDarkMode(!darkMode)}>
+              <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Conteúdo */}
-      <View style={styles.content}>
-        {renderScreen()}
-      </View>
+        {/* Conteúdo */}
+        <View style={styles.content}>
+          {renderScreen()}
+        </View>
 
-      {/* Navegação */}
-      <View style={styles.tabBar}>
-        <TabButton screen={SCREENS.DASHBOARD} icon="home" label="Home" />
-        <TabButton screen={SCREENS.AGENDAMENTOS} icon="calendar" label="Agenda" />
-        <TabButton screen={SCREENS.SERVICOS} icon="cut" label="Serviços" />
-        <TabButton screen={SCREENS.FUNCIONARIOS} icon="people" label="Equipe" />
-        <TabButton screen={SCREENS.RELATORIOS} icon="stats-chart" label="Relatórios" />
-      </View>
-    </View>
+        {/* Navegação */}
+        <View style={styles.tabBar}>
+          <TabButton screen={SCREENS.DASHBOARD} icon="home" label="Home" />
+          <TabButton screen={SCREENS.AGENDAMENTOS} icon="calendar" label="Agenda" />
+          <TabButton screen={SCREENS.SERVICOS} icon="cut" label="Serviços" />
+          <TabButton screen={SCREENS.FUNCIONARIOS} icon="people" label="Equipe" />
+          <TabButton screen={SCREENS.RELATORIOS} icon="stats-chart" label="Relatórios" />
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

@@ -19,7 +19,9 @@ export default function FuncionariosScreen({ theme, styles, user }) {
 
   const [errors, setErrors] = useState({});
 
-  const isDono = user?.type === 'admin';
+  // PERMITIR TODOS OS USUÁRIOS ADMINISTRAR FUNCIONÁRIOS
+  const canEdit = true; // Remover restrição
+
   const funcoes = ['Barbeiro', 'Barbeira', 'Recepcionista', 'Gerente', 'Auxiliar'];
 
   useEffect(() => { 
@@ -75,11 +77,6 @@ export default function FuncionariosScreen({ theme, styles, user }) {
   };
 
   const handleDelete = async (id) => {
-    if (!isDono) {
-      Alert.alert('Acesso Negado', 'Apenas o administrador pode excluir funcionários');
-      return;
-    }
-
     Alert.alert('Confirmar', 'Excluir este funcionário?', [
       { text: 'Cancelar', style: 'cancel' },
       { 
@@ -96,11 +93,6 @@ export default function FuncionariosScreen({ theme, styles, user }) {
   };
 
   const toggleStatus = async (id) => {
-    if (!isDono) {
-      Alert.alert('Acesso Negado', 'Apenas o administrador pode alterar status');
-      return;
-    }
-
     const funcionario = funcionarios.find(f => f.id === id);
     const novoStatus = funcionario.status === 'ativo' ? 'inativo' : 'ativo';
     
@@ -145,20 +137,18 @@ export default function FuncionariosScreen({ theme, styles, user }) {
           </View>
         </View>
         
-        {isDono && (
-          <TouchableOpacity 
-            style={[screenStyles.statusButton, { 
-              backgroundColor: item.status === 'ativo' ? theme.colors.success : theme.colors.danger 
-            }]}
-            onPress={() => toggleStatus(item.id)}
-          >
-            <Ionicons 
-              name={item.status === 'ativo' ? 'checkmark-circle' : 'close-circle'} 
-              size={20} 
-              color="white" 
-            />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={[screenStyles.statusButton, { 
+            backgroundColor: item.status === 'ativo' ? theme.colors.success : theme.colors.danger 
+          }]}
+          onPress={() => toggleStatus(item.id)}
+        >
+          <Ionicons 
+            name={item.status === 'ativo' ? 'checkmark-circle' : 'close-circle'} 
+            size={20} 
+            color="white" 
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={screenStyles.contactInfo}>
@@ -172,22 +162,20 @@ export default function FuncionariosScreen({ theme, styles, user }) {
         </View>
       </View>
 
-      {isDono && (
-        <View style={screenStyles.actions}>
-          <TouchableOpacity 
-            style={[screenStyles.actionButton, { backgroundColor: theme.colors.primary }]} 
-            onPress={() => { setEditingFuncionario(item); setFormData(item); setModalVisible(true); }}
-          >
-            <Ionicons name="create" size={16} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[screenStyles.actionButton, { backgroundColor: theme.colors.danger }]} 
-            onPress={() => handleDelete(item.id)}
-          >
-            <Ionicons name="trash" size={16} color="white" />
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={screenStyles.actions}>
+        <TouchableOpacity 
+          style={[screenStyles.actionButton, { backgroundColor: theme.colors.primary }]} 
+          onPress={() => { setEditingFuncionario(item); setFormData(item); setModalVisible(true); }}
+        >
+          <Ionicons name="create" size={16} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[screenStyles.actionButton, { backgroundColor: theme.colors.danger }]} 
+          onPress={() => handleDelete(item.id)}
+        >
+          <Ionicons name="trash" size={16} color="white" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -202,24 +190,13 @@ export default function FuncionariosScreen({ theme, styles, user }) {
             {funcionarios.filter(f => f.status === 'ativo').length} funcionários ativos
           </Text>
         </View>
-        {isDono && (
-          <TouchableOpacity 
-            style={screenStyles.addButton} 
-            onPress={() => { resetForm(); setModalVisible(true); }}
-          >
-            <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={screenStyles.addButton} 
+          onPress={() => { resetForm(); setModalVisible(true); }}
+        >
+          <Ionicons name="add" size={24} color="white" />
+        </TouchableOpacity>
       </View>
-
-      {!isDono && (
-        <View style={screenStyles.avisoContainer}>
-          <Ionicons name="lock-closed" size={16} color={theme.colors.warning} />
-          <Text style={screenStyles.avisoText}>
-            Modo visualização - Apenas o administrador pode fazer alterações
-          </Text>
-        </View>
-      )}
 
       <FlatList 
         data={funcionarios} 
@@ -231,11 +208,9 @@ export default function FuncionariosScreen({ theme, styles, user }) {
           <View style={screenStyles.emptyState}>
             <Ionicons name="people-outline" size={48} color={theme.colors.textSecondary} />
             <Text style={screenStyles.emptyText}>Nenhum funcionário cadastrado</Text>
-            {isDono && (
-              <Text style={screenStyles.emptySubtext}>
-                Clique no + para adicionar seu primeiro funcionário
-              </Text>
-            )}
+            <Text style={screenStyles.emptySubtext}>
+              Clique no + para adicionar seu primeiro funcionário
+            </Text>
           </View>
         }
       />
@@ -388,22 +363,6 @@ const createScreenStyles = (theme) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5
-  },
-  avisoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.warning + '15',
-    padding: 12,
-    margin: 16,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.warning,
-    gap: 8
-  },
-  avisoText: {
-    fontSize: 12,
-    color: theme.colors.warning,
-    flex: 1
   },
   list: { flex: 1 }, 
   listContent: { padding: 16 },
