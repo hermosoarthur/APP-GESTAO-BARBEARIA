@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
 export default function DashboardScreen({ theme, styles, onNavigate, user }) {
+  const insets = useSafeAreaInsets();
   const [dashboardData, setDashboardData] = useState({
     agendamentosHoje: 0,
     totalVendasHoje: 0,
@@ -78,7 +80,7 @@ export default function DashboardScreen({ theme, styles, onNavigate, user }) {
   );
 
   return (
-    <ScrollView style={styles.content} contentContainerStyle={screenStyles.container}>
+    <ScrollView style={styles.content} contentContainerStyle={[screenStyles.container, { paddingBottom: insets.bottom + 16 }]}>
       {/* Saudação */}
       <View style={screenStyles.greeting}>
         <Text style={screenStyles.greetingText}>

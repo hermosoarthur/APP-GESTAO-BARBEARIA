@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "App Barber",
-    "slug": "app-barber",
+    "name": "Studio",
+    "slug": "app-studio",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logoicon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#007AFF",
@@ -24,7 +24,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logoicon.png"
     },
     "extra": {
       "eas": {

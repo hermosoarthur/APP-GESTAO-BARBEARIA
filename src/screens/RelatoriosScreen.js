@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../../services/databaseService';
 
 const { width } = Dimensions.get('window');
 
 export default function RelatoriosScreen({ theme, styles, user }) { // ← user adicionado
+  const insets = useSafeAreaInsets();
   const [periodo, setPeriodo] = useState('semana');
   const [relatorioData, setRelatorioData] = useState({ 
     vendas: [], 
@@ -187,7 +189,7 @@ export default function RelatoriosScreen({ theme, styles, user }) { // ← user 
 
   if (loading) {
     return (
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: insets.bottom }]}>
         <View style={screenStyles.loadingContainer}>
           <Ionicons name="stats-chart" size={48} color={theme.colors.primary} />
           <Text style={screenStyles.loadingText}>Carregando relatórios...</Text>
@@ -197,7 +199,7 @@ export default function RelatoriosScreen({ theme, styles, user }) { // ← user 
   }
 
   return (
-    <ScrollView style={styles.content} contentContainerStyle={screenStyles.container}>
+    <ScrollView style={styles.content} contentContainerStyle={[screenStyles.container, { paddingBottom: insets.bottom + 16 }]}>
       {/* Header */}
       <View style={screenStyles.header}>
         <View>
