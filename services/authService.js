@@ -22,8 +22,8 @@ export const authService = {
         template_params: {
           to_email: formattedEmail,
           verification_code: code,
-          from_name: 'App Barber',
-          app_name: 'App Barber'
+          from_name: 'Studio',
+          app_name: 'App Studio'
         }
       };
 

@@ -73,8 +73,7 @@ export default function App() {
     }
   };
 
-  // Always render the app inside SafeAreaProvider so screens that use
-  // useSafeAreaInsets() have a provider available (fixes runtime error).
+
 
   const TabButton = ({ screen, icon, label }) => {
     const isActive = currentScreen === screen;
@@ -103,7 +102,7 @@ export default function App() {
         {/* Header (hidden on LOGIN) */}
         {currentScreen !== SCREENS.LOGIN && (
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>App Barber</Text>
+            <Text style={styles.headerTitle}>Studio</Text>
             <View style={styles.headerActions}>
               <Text style={styles.userInfo}>{user?.email || 'Usuário'}</Text>
               <TouchableOpacity style={styles.themeButton} onPress={() => setDarkMode(!darkMode)}>

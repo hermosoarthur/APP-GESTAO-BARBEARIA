@@ -654,7 +654,7 @@ export default function AgendamentosScreen({ theme, styles, user }) {
     }
 
     const telefone = agendamento.telefone.replace(/\D/g, '');
-    const mensagem = `Olá ${agendamento.cliente || 'Cliente'}! Seu agendamento na App Barber está confirmado para ${formatDisplayDate(agendamento.data)} às ${agendamento.hora || '--:--'}. Serviço: ${agendamento.servico || 'Serviço'} com ${agendamento.barbeiro || 'Barbeiro'}. Obrigado!`;
+    const mensagem = `Olá ${agendamento.cliente || 'Cliente'}! Seu agendamento no Studio está confirmado para ${formatDisplayDate(agendamento.data)} às ${agendamento.hora || '--:--'}. Serviço: ${agendamento.servico || 'Serviço'} com ${agendamento.barbeiro || 'Barbeiro'}. Obrigado!`;
     
     const url = `sms:${telefone}?body=${encodeURIComponent(mensagem)}`;
     
@@ -670,7 +670,7 @@ export default function AgendamentosScreen({ theme, styles, user }) {
     }
 
     const telefone = agendamento.telefone.replace(/\D/g, '');
-    const mensagem = `Lembrete: Seu agendamento na App Barber é hoje às ${agendamento.hora || '--:--'}. Serviço: ${agendamento.servico || 'Serviço'} com ${agendamento.barbeiro || 'Barbeiro'}. Chegue 5 minutos antes!`;
+    const mensagem = `Lembrete: Seu agendamento no Studio é hoje às ${agendamento.hora || '--:--'}. Serviço: ${agendamento.servico || 'Serviço'} com ${agendamento.barbeiro || 'Barbeiro'}. Chegue 5 minutos antes!`;
     
     const url = `sms:${telefone}?body=${encodeURIComponent(mensagem)}`;
     
