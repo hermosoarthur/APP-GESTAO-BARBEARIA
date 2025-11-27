@@ -4,7 +4,7 @@
     "slug": "app-studio",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logoicon.png",
+    "icon": "./assets/logoicon.jpeg",
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#007AFF",
@@ -17,19 +17,22 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "",
+      "package": "com.arthurhermoso.appstudio",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/logoicon.jpeg",
         "backgroundColor": "#FFFFFF"
       }
     },
     "web": {
-      "favicon": "./assets/logoicon.png"
+      "favicon": "./assets/logoicon.jpeg"
     },
     "extra": {
       "eas": {
-        "projectId": "79aea499-5d56-48a9-b4b4-91163e1e4d5a"
+        "projectId": "be7e7fd2-3666-4bfb-a1b2-e9cd30bc1119"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
