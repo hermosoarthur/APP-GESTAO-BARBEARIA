@@ -1,11 +1,15 @@
 .cabecalho {
-  background: #000;
-  color: white;
+ background: linear-gradient(135deg, #0077cc, #00c6ff); /* DEGRADÊ AZUL PROFUNDO */
+  color: #0000;
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
+}
+.cabecalho img {
+  height: 75px; 
+  width: auto;
 }
 
 .logo {

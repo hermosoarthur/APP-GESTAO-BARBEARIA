@@ -6,39 +6,39 @@ import styles from './Equipe.module.css'
 const equipe = [
   {
     nome: "Arthur",
-    funcao: "Barbeiro Sênior",
-    imagem: "/imagens/arthur.jpg",
-    descricao: "Especialista em cortes clássicos e degradê. 8 anos de experiência. Mestre da navalha e do estilo retrô."
+    funcao: "Desenvolvedor",
+    imagem: "/imagens/arthurr.jpg",
+    descricao: "Faz a mágica acontecer por trás das cortinas. Se o app funciona direitinho, pode apostar que foi ele que consertou."
   },
   {
     nome: "Vitória",
-    funcao: "Cabeleireira & Estilista",
+    funcao: "Desenvolvedor",
     imagem: "/imagens/vitoria.jpg",
-    descricao: "Transforma cabelos com técnicas modernas. Apaixonada por penteados sociais e colorimetria."
+    descricao: "Cuida dos dados como se fossem plantas: alimenta, organiza e nunca deixa morrer. O app agradece."
   },
   {
     nome: "Joicy",
-    funcao: "Especialista em Coloração",
-    imagem: "/imagens/joicy.jpg",
-    descricao: "Rainha das luzes, mechas e tonalizações. Cores perfeitas com saúde capilar garantida."
+    funcao: "Desenvolvedor",
+    imagem: "/imagens/joiicy.jpg",
+    descricao: "Fez o app rodar liso no celular. Se abriu rápido e sem travar, ele vai dizer que é “simplesmente talento."
   },
   {
     nome: "Geovanna",
-    funcao: "Maquiadora Profissional",
-    imagem: "/imagens/geovanna.jpg",
-    descricao: "Make para eventos, noivas e dia a dia. Realça sua beleza natural com técnica e sofisticação."
+    funcao: "Desenvolvedor",
+    imagem: "/imagens/geh.jpg",
+    descricao: "Garante que o usuário não fique perdido. Criou um app tão intuitivo que até quem troca a senha e esquece pode usar."
   },
   {
     nome: "Victoria",
-    funcao: "Manicure & Podóloga",
+    funcao: "Desenvolvedor",
     imagem: "/imagens/victoria.jpg",
-    descricao: "Unhas impecáveis e cuidados com os pés. Higiene, design e durabilidade em cada atendimento."
+    descricao: "Encontra bugs escondidos até onde ninguém imaginava. Se passou por ela, está funcionando mesmo."
   },
   {
     nome: "Rafaela",
-    funcao: "Manicure & Nail Designer",
+    funcao: "Desenvolvedor",
     imagem: "/imagens/rafaela.jpg",
-    descricao: "Arte nas unhas: alongamentos, gel, fibra. Estilo único para quem ama se destacar."
+    descricao: "Transforma código em telas tão bonitas que até ela mesma fica surpresa. Responsável pela interface charmosa do Studio App."
   },
 ]
 
@@ -54,7 +54,7 @@ export default function Equipe() {
         <div className={styles.container}>
           <h1>Nossa Equipe</h1>
           <p className={styles.subtitulo}>
-            Profissionais apaixonados por transformar seu visual com técnica e carinho.
+            Profissionais apaixonados por unir tecnologia e talento para facilitar a sua vida.
           </p>
 
           <div className={styles.grid}>
