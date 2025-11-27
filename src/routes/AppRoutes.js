@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Inicio from '../pages/Inicio'
-import Servicos from '../pages/Servicos'
 import Equipe from '../pages/Equipe'
 import Contato from '../pages/Contato'
 import Cabecalho from '../components/Cabecalho'
@@ -14,7 +13,6 @@ export default function AppRoutes() {
       <Container>
         <Routes>
           <Route path="/" element={<Inicio />} />
-          <Route path="/servicos" element={<Servicos />} />
           <Route path="/equipe" element={<Equipe />} />
           <Route path="/contato" element={<Contato />} />
         </Routes>

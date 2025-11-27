@@ -14,7 +14,6 @@ export default function Cabecalho() {
 
       <nav>
         <Link to="/">Início</Link>
-        <Link to="/servicos">Serviços</Link>
         <Link to="/equipe">Equipe</Link>
         <Link to="/contato">Contato</Link>
       </nav>
