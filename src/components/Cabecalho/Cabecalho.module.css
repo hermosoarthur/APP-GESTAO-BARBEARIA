@@ -1,0 +1,26 @@
+.cabecalho {
+  background: #000;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.logo {
+  font-size: 1.8rem;
+  color: #1E90FF;
+  text-decoration: none;
+}
+
+nav a {
+  color: white;
+  margin: 0 1rem;
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+nav a:hover {
+  color: #1E90FF;
+}

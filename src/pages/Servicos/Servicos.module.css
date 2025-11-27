@@ -1,0 +1,62 @@
+.servicos {
+  padding: 5rem 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.servicos h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.intro {
+  font-size: 1.3rem;
+  color: #555;
+  max-width: 800px;
+  margin: 0 auto 4rem;
+  line-height: 1.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2.5rem;
+  margin-bottom: 4rem;
+}
+
+.cta {
+  margin-top: 2rem;
+}
+
+.botao {
+  background: #0077cc;
+  color: white;
+  padding: 1.2rem 3rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 50px;
+  display: inline-block;
+  box-shadow: 0 6px 20px rgba(0, 119, 204, 0.3);
+  transition: all 0.3s ease;
+}
+
+.botao:hover {
+  background: #005fa3;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 119, 204, 0.4);
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .servicos h1 { font-size: 2.3rem; }
+  .intro { font-size: 1.1rem; margin-bottom: 3rem; }
+  .botao { padding: 1rem 2rem; font-size: 1.1rem; }
+}

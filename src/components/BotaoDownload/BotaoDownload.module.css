@@ -1,0 +1,25 @@
+.download {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f8f9fa;
+}
+
+h2 {
+  color: #000;
+  margin-bottom: 1rem;
+}
+
+.botao {
+  background: #1E90FF;
+  color: white;
+  padding: 1rem 3rem;
+  font-size: 1.2rem;
+  text-decoration: none;
+  border-radius: 50px;
+  display: inline-block;
+  margin: 1rem 0;
+}
+
+.botao:hover {
+  background: #0077cc;
+}

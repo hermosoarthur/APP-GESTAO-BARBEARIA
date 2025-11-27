@@ -1,0 +1,60 @@
+.banner {
+  height: 100vh; 
+  width: 100%;
+  background: linear-gradient(135deg, #0077cc, #00c6ff); /* DEGRADÊ AZUL PROFUNDO */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: white;
+  padding: 2rem;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.banner h1 {
+  font-size: 4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.banner p {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.botao {
+  background: white;
+  color: #0077cc;
+  padding: 1rem 3rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.botao:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  background: #f0f8ff;
+}
+
+
+@media (max-width: 768px) {
+  .banner h1 {
+    font-size: 2.8rem;
+  }
+  .banner p {
+    font-size: 1.2rem;
+  }
+  .botao {
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+  }
+}

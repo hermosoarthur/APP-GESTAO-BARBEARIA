@@ -1,0 +1,29 @@
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+}
+
+img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+h3 {
+  margin: 1rem 0 0.5rem;
+  color: #000;
+}
+
+.preco {
+  color: #1E90FF;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
